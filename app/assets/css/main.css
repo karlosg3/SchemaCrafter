@@ -1,0 +1,138 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/*
+ * Design tokens ported from .claude/docs/DB Canvas Designer.dc.html, where every
+ * value lived as an inline literal. Dark is the only theme the prototype has.
+ */
+@theme static {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  /* Surfaces */
+  --color-surface-root: #0a0b0d;
+  --color-surface-chrome: #111318;
+  --color-surface-canvas: #0d0f13;
+  --color-surface-code: #0c0e12;
+  --color-surface-block: #141720;
+  --color-surface-raised: #171b21;
+  --color-surface-input: #1c2029;
+
+  /* Text ramp */
+  --color-ink-bright: #e7e9ec;
+  --color-ink: #c7cad1;
+  --color-ink-muted: #9aa1ac;
+  --color-ink-dim: #6b7280;
+  --color-ink-faint: #5b6270;
+  --color-ink-tool: #8b92a0;
+  --color-ink-code: #d3d6db;
+  --color-ink-gutter: #4b5262;
+
+  /* Hairlines */
+  --color-line-row: rgb(255 255 255 / 0.05);
+  --color-line-rail: rgb(255 255 255 / 0.07);
+  --color-line-chrome: rgb(255 255 255 / 0.09);
+  --color-line-header: rgb(255 255 255 / 0.10);
+  --color-line-panel: rgb(255 255 255 / 0.12);
+  --color-line-block: rgb(255 255 255 / 0.14);
+  --color-line-dashed: rgb(255 255 255 / 0.18);
+
+  /* Accent — oklch(66% 0.19 262) is the prototype default */
+  --color-accent-50: oklch(97% 0.02 262);
+  --color-accent-100: oklch(94% 0.04 262);
+  --color-accent-200: oklch(89% 0.07 262);
+  --color-accent-300: oklch(82% 0.11 262);
+  --color-accent-400: oklch(74% 0.15 262);
+  --color-accent-500: oklch(66% 0.19 262);
+  --color-accent-600: oklch(58% 0.19 262);
+  --color-accent-700: oklch(49% 0.16 262);
+  --color-accent-800: oklch(40% 0.13 262);
+  --color-accent-900: oklch(33% 0.10 262);
+  --color-accent-950: oklch(23% 0.07 262);
+
+  /* Canvas semantics */
+  --color-pk: #facc15;
+  --color-sync-pending: #f59e0b;
+  --color-sync-ok: #22c55e;
+  --color-rel-fk: rgb(99 102 241 / 0.65);
+  --color-rel-enum: rgb(239 68 68 / 0.65);
+  --color-rel-cross: rgb(148 163 184 / 0.45);
+  --color-rel-aggregate: rgb(148 163 184 / 0.6);
+
+  /* Block geometry — see app/composables/useBlockGeometry.ts */
+  --block-width: 260px;
+  --block-width-enum: 220px;
+  --block-header-h: 40px;
+  --block-row-h: 32px;
+  --block-row-h-enum: 28px;
+  --block-footer-h: 34px;
+  --block-border-w: 2px;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+/*
+ * refactor-plan.md:39 requires sharp corners. Nuxt UI sizes every component's
+ * corners as rounded-[calc(var(--ui-radius)*N)], so zeroing this one token
+ * squares the entire library instead of overriding it per component.
+ */
+:root,
+.dark {
+  --ui-radius: 0rem;
+
+  --ui-bg: var(--color-surface-chrome);
+  --ui-bg-muted: var(--color-surface-block);
+  --ui-bg-elevated: var(--color-surface-raised);
+  --ui-bg-accented: var(--color-surface-input);
+  --ui-bg-inverted: var(--color-ink-bright);
+
+  --ui-text-dimmed: var(--color-ink-faint);
+  --ui-text-muted: var(--color-ink-dim);
+  --ui-text-toned: var(--color-ink-muted);
+  --ui-text: var(--color-ink);
+  --ui-text-highlighted: var(--color-ink-bright);
+  --ui-text-inverted: var(--color-surface-root);
+
+  --ui-border: var(--color-line-block);
+  --ui-border-muted: var(--color-line-chrome);
+  --ui-border-accented: var(--color-line-panel);
+}
+
+body {
+  background-color: var(--color-surface-root);
+  color: var(--color-ink);
+  font-size: 13px;
+}
+
+/* refactor-plan.md:39 — "bordes anchos", applied to chrome as well as blocks. */
+@layer components {
+  .sc-panel {
+    background-color: var(--color-surface-block);
+    border: var(--block-border-w) solid var(--color-line-panel);
+    box-shadow: 0 8px 20px rgb(0 0 0 / 0.4);
+  }
+
+  .sc-block {
+    background-color: var(--color-surface-block);
+    border: var(--block-border-w) solid var(--color-line-block);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
+  }
+}
+
+@utility scrollbar-thin {
+  &::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgb(255 255 255 / 0.14);
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgb(255 255 255 / 0.22);
+  }
+}

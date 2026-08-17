@@ -1,0 +1,6 @@
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true
+  vue-demi: true
+minimumReleaseAgeExclude:
+  - '@codemirror/view@6.43.9'
