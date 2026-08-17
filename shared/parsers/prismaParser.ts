@@ -10,8 +10,9 @@ export function parsePrismaToProject(codeText: string, currentProject: DatabaseP
   let enumY = 80;
 
   while ((enumMatch = enumRegex.exec(codeText)) !== null) {
-    const enumName = enumMatch[1];
-    const body = enumMatch[2];
+    // Groups 1 and 2 are non-optional in enumRegex.
+    const enumName = enumMatch[1]!;
+    const body = enumMatch[2]!;
 
     const values = body
       .split('\n')
@@ -37,7 +38,7 @@ export function parsePrismaToProject(codeText: string, currentProject: DatabaseP
   let y = 80;
 
   while ((match = modelRegex.exec(codeText)) !== null) {
-    const rawModelName = match[1];
+    const rawModelName = match[1]!;
     const tableName = rawModelName.toLowerCase();
     const body = match[2] || '';
 
@@ -52,8 +53,9 @@ export function parsePrismaToProject(codeText: string, currentProject: DatabaseP
       const parts = line.split(/\s+/);
       if (parts.length < 2) continue;
 
-      const colName = parts[0];
-      const prismaTypeRaw = parts[1].replace('?', '');
+      // Both indexes are guaranteed by the `parts.length < 2` guard above.
+      const colName = parts[0]!;
+      const prismaTypeRaw = parts[1]!.replace('?', '');
 
       // Skip relational array field declarations
       if (/^[A-Z]/.test(prismaTypeRaw) && !line.includes('@relation') && prismaTypeRaw.endsWith('[]')) {
@@ -65,13 +67,13 @@ export function parsePrismaToProject(codeText: string, currentProject: DatabaseP
 
       const type: DataType = isEnumField ? 'ENUM' : mapPrismaTypeToDataType(prismaTypeRaw);
       const isPrimaryKey = line.includes('@id');
-      const isNullable = parts[1].endsWith('?');
+      const isNullable = parts[1]!.endsWith('?');
       const isUnique = line.includes('@unique');
 
       let defaultValue: string | undefined = undefined;
       const defaultMatch = /@default\(([^)]+)\)/.exec(line);
       if (defaultMatch) {
-        defaultValue = defaultMatch[1].replace(/["']/g, '');
+        defaultValue = defaultMatch[1]!.replace(/["']/g, '');
       }
 
       columns.push({

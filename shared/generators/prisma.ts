@@ -1,4 +1,5 @@
 import type { DatabaseProject, Table, DataType } from '../types/schema';
+import { formatClassName } from '../utils/naming';
 
 export function generatePrismaSchema(project: DatabaseProject): string {
   let code = `datasource db {\n  provider = "${mapEngineToPrismaProvider(project.engine)}"\n  url      = env("DATABASE_URL")\n}\n\ngenerator client {\n  provider = "prisma-client-js"\n}\n\n`;
@@ -19,7 +20,7 @@ export function generatePrismaSchema(project: DatabaseProject): string {
   project.tables.forEach(t => tableMap.set(t.id, t));
 
   for (const table of project.tables) {
-    const modelName = formatModelName(table.name);
+    const modelName = formatClassName(table.name);
     code += `model ${modelName} {\n`;
 
     for (const col of table.columns) {
@@ -61,7 +62,7 @@ export function generatePrismaSchema(project: DatabaseProject): string {
       if (col.foreignKey) {
         const targetTable = tableMap.get(col.foreignKey.targetTableId);
         if (targetTable) {
-          const targetModel = formatModelName(targetTable.name);
+          const targetModel = formatClassName(targetTable.name);
           const relFieldName = col.name.replace(/_id$/i, '') || targetModel.toLowerCase();
           const targetColName = targetTable.columns.find(c => c.id === col.foreignKey?.targetColumnId)?.name || 'id';
           
@@ -118,14 +119,6 @@ function mapPrismaType(type: DataType): string {
   }
 }
 
-function formatModelName(name: string): string {
-  return name
-    .replace(/[^a-zA-Z0-9]/g, '_')
-    .split('_')
-    .filter(Boolean)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join('');
-}
 
 function formatFieldName(name: string): string {
   return name.replace(/[^a-zA-Z0-9_]/g, '');

@@ -1,4 +1,5 @@
 import type { Table, Column, DataType, DatabaseProject, SchemaGroup } from '../types/schema';
+import { mapSqlTypeToDataType } from '../utils/naming';
 
 export function parseSqlToProject(codeText: string, currentProject: DatabaseProject): DatabaseProject {
   const tables: Table[] = [];
@@ -12,12 +13,13 @@ export function parseSqlToProject(codeText: string, currentProject: DatabaseProj
   let colorIdx = currentProject.schemas.length;
 
   while ((schemaMatch = schemaRegex.exec(codeText)) !== null) {
-    const sName = schemaMatch[1].toLowerCase();
+    // Group 1 is a non-optional (\w+), so it is present whenever the regex matched.
+    const sName = schemaMatch[1]!.toLowerCase();
     if (!schemasMap.has(sName)) {
       schemasMap.set(sName, {
         id: `schema-${sName}-${Date.now()}`,
         name: sName,
-        color: colors[colorIdx++ % colors.length]
+        color: colors[colorIdx++ % colors.length]!
       });
     }
   }
@@ -35,7 +37,7 @@ export function parseSqlToProject(codeText: string, currentProject: DatabaseProj
 
   while ((match = createTableRegex.exec(cleanSql)) !== null) {
     const rawSchema = match[1]?.toLowerCase();
-    const rawTableName = match[2];
+    const rawTableName = match[2]!;
     const tableName = rawTableName.toLowerCase();
     const body = match[3] || '';
 
@@ -45,7 +47,7 @@ export function parseSqlToProject(codeText: string, currentProject: DatabaseProj
         schemasMap.set(rawSchema, {
           id: `schema-${rawSchema}-${Date.now()}`,
           name: rawSchema,
-          color: colors[colorIdx++ % colors.length]
+          color: colors[colorIdx++ % colors.length]!
         });
       }
       schemaId = schemasMap.get(rawSchema)?.id || currentProject.schemas[0]?.id;
@@ -69,8 +71,9 @@ export function parseSqlToProject(codeText: string, currentProject: DatabaseProj
       const parts = line.split(/\s+/);
       if (parts.length < 2) continue;
 
-      const colName = parts[0].replace(/[`"']/g, '');
-      const typeRaw = parts[1].toUpperCase().replace(/\(\d+\)/g, '');
+      // Both indexes are guaranteed by the `parts.length < 2` guard above.
+      const colName = parts[0]!.replace(/[`"']/g, '');
+      const typeRaw = parts[1]!.toUpperCase().replace(/\(\d+\)/g, '');
 
       const type: DataType = mapSqlTypeToDataType(typeRaw);
       const isPrimaryKey = line.toUpperCase().includes('PRIMARY KEY');
@@ -138,17 +141,3 @@ export function parseSqlToProject(codeText: string, currentProject: DatabaseProj
   };
 }
 
-function mapSqlTypeToDataType(rawType: string): DataType {
-  if (rawType.includes('INT') || rawType.includes('SERIAL')) return 'INT';
-  if (rawType.includes('BIGINT')) return 'BIGINT';
-  if (rawType.includes('CHAR') || rawType.includes('VARCHAR')) return 'VARCHAR';
-  if (rawType.includes('TEXT')) return 'TEXT';
-  if (rawType.includes('BOOL')) return 'BOOLEAN';
-  if (rawType.includes('UUID')) return 'UUID';
-  if (rawType.includes('DECIMAL') || rawType.includes('NUMERIC')) return 'DECIMAL';
-  if (rawType.includes('FLOAT') || rawType.includes('REAL') || rawType.includes('DOUBLE')) return 'FLOAT';
-  if (rawType.includes('TIME') || rawType.includes('TIMESTAMP')) return 'TIMESTAMP';
-  if (rawType.includes('DATE')) return 'DATE';
-  if (rawType.includes('JSON')) return 'JSON';
-  return 'VARCHAR';
-}

@@ -1,4 +1,5 @@
 import type { DatabaseProject, Column } from '../types/schema';
+import { formatCamelCase } from '../utils/naming';
 
 export function generateDrizzleSchema(project: DatabaseProject): string {
   const engine = project.engine;
@@ -113,11 +114,3 @@ function generateColumnDef(col: Column, isPg: boolean): string {
   return def;
 }
 
-function formatCamelCase(name: string): string {
-  return name
-    .replace(/[^a-zA-Z0-9]/g, '_')
-    .split('_')
-    .filter(Boolean)
-    .map((part, idx) => (idx === 0 ? part.toLowerCase() : part.charAt(0).toUpperCase() + part.slice(1)))
-    .join('');
-}

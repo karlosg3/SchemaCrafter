@@ -64,7 +64,7 @@ export const ECOMMERCE_TEMPLATE: DatabaseProject = {
       color: '#f59e0b',
       columns: [
         { id: 'o-1', name: 'id', type: 'UUID', isPrimaryKey: true, isNullable: false, isUnique: true },
-        { id: 'o-2', name: 'user_id', type: 'UUID', isPrimaryKey: false, isNullable: false, isUnique: false, foreignKey: { targetTableId: 'table-orders', targetColumnId: 'o-1', onDelete: 'CASCADE' } },
+        { id: 'o-2', name: 'user_id', type: 'UUID', isPrimaryKey: false, isNullable: false, isUnique: false, foreignKey: { targetTableId: 'table-users', targetColumnId: 'u-1', onDelete: 'CASCADE' } },
         { id: 'o-3', name: 'total_amount', type: 'DECIMAL', isPrimaryKey: false, isNullable: false, isUnique: false },
         { id: 'o-4', name: 'status', type: 'ENUM', enumName: 'OrderStatus', isPrimaryKey: false, isNullable: false, isUnique: false, defaultValue: 'pending' },
         { id: 'o-5', name: 'created_at', type: 'TIMESTAMP', isPrimaryKey: false, isNullable: false, isUnique: false, defaultValue: 'NOW()' }

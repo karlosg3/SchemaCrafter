@@ -1,0 +1,364 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`round trip > ecommerce > reports its drizzle losses 1`] = `
+{
+  "columnDiffs": [
+    "categories.id: isUnique true -> false",
+    "categories.id: isAutoIncrement true -> false",
+    "categories.name: isNullable false -> true",
+    "categories.name: isUnique true -> false",
+    "categories.slug: isNullable false -> true",
+    "categories.slug: isUnique true -> false",
+    "order_items.id: isUnique true -> false",
+    "order_items.id: isAutoIncrement true -> false",
+    "order_items.order_id: type "UUID" -> "TEXT"",
+    "order_items.order_id: onDelete "CASCADE" -> undefined",
+    "order_items.product_id: type "UUID" -> "TEXT"",
+    "order_items.product_id: onDelete "RESTRICT" -> undefined",
+    "order_items.quantity: defaultValue "1" -> undefined",
+    "order_items.unit_price: isNullable false -> true",
+    "orders.id: type "UUID" -> "TEXT"",
+    "orders.id: isUnique true -> false",
+    "orders.user_id: type "UUID" -> "TEXT"",
+    "orders.user_id: onDelete "CASCADE" -> undefined",
+    "orders.total_amount: isNullable false -> true",
+    "orders.status: type "ENUM" -> "TEXT"",
+    "orders.status: enumName "OrderStatus" -> undefined",
+    "orders.status: defaultValue "pending" -> undefined",
+    "orders.created_at: defaultValue "NOW()" -> undefined",
+    "products.id: type "UUID" -> "TEXT"",
+    "products.id: isUnique true -> false",
+    "products.title: isNullable false -> true",
+    "products.price: isNullable false -> true",
+    "products.stock_quantity: defaultValue "0" -> undefined",
+    "products.category_id: onDelete "SET NULL" -> undefined",
+    "products.created_at: defaultValue "NOW()" -> undefined",
+    "users.id: type "UUID" -> "TEXT"",
+    "users.id: isUnique true -> false",
+    "users.id: defaultValue "gen_random_uuid()" -> undefined",
+    "users.email: isNullable false -> true",
+    "users.email: isUnique true -> false",
+    "users.password_hash: isNullable false -> true",
+    "users.is_active: defaultValue "true" -> undefined",
+    "users.created_at: defaultValue "NOW()" -> undefined",
+  ],
+  "enumsLost": [
+    "OrderStatus",
+  ],
+  "foreignKeysLost": [
+    "order_items.order_id -> orders.id",
+    "order_items.product_id -> products.id",
+    "orders.user_id -> users.id",
+    "products.category_id -> categories.id",
+  ],
+  "primaryKeysLost": [],
+  "schemasLost": [
+    "auth",
+    "catalog",
+    "sales",
+  ],
+  "tablesGained": [],
+  "tablesLost": [],
+}
+`;
+
+exports[`round trip > ecommerce > reports its mikroorm losses 1`] = `
+{
+  "columnDiffs": [
+    "categories.id: isUnique true -> false",
+    "categories.id: isAutoIncrement true -> false",
+    "categories.description: type "TEXT" -> "VARCHAR"",
+    "order_items.id: isUnique true -> false",
+    "order_items.id: isAutoIncrement true -> false",
+    "order_items.order_id: column dropped",
+    "order_items.product_id: column dropped",
+    "order_items.quantity: defaultValue "1" -> "'1'"",
+    "order_items.unit_price: type "DECIMAL" -> "INT"",
+    "orders.id: type "UUID" -> "VARCHAR"",
+    "orders.id: isUnique true -> false",
+    "orders.user_id: column dropped",
+    "orders.total_amount: type "DECIMAL" -> "INT"",
+    "orders.status: defaultValue "pending" -> "OrderStatus.PENDING"",
+    "orders.created_at: defaultValue "NOW()" -> "'NOW()'"",
+    "products.id: type "UUID" -> "VARCHAR"",
+    "products.id: isUnique true -> false",
+    "products.price: type "DECIMAL" -> "INT"",
+    "products.stock_quantity: defaultValue "0" -> "'0'"",
+    "products.category_id: column dropped",
+    "products.created_at: defaultValue "NOW()" -> "'NOW()'"",
+    "users.id: type "UUID" -> "VARCHAR"",
+    "users.id: isUnique true -> false",
+    "users.id: defaultValue "gen_random_uuid()" -> undefined",
+    "users.is_active: defaultValue "true" -> "'true'"",
+    "users.created_at: defaultValue "NOW()" -> "'NOW()'"",
+  ],
+  "enumsLost": [],
+  "foreignKeysLost": [],
+  "primaryKeysLost": [],
+  "schemasLost": [],
+  "tablesGained": [],
+  "tablesLost": [],
+}
+`;
+
+exports[`round trip > ecommerce > reports its prisma losses 1`] = `
+{
+  "columnDiffs": [
+    "categories.id: isUnique true -> false",
+    "categories.id: isAutoIncrement true -> false",
+    "categories.description: type "TEXT" -> "VARCHAR"",
+    "orders.id: type "UUID" -> "VARCHAR"",
+    "orders.id: isUnique true -> false",
+    "orders.user_id: type "UUID" -> "VARCHAR"",
+    "orders.user_id: onDelete "CASCADE" -> undefined",
+    "orders.created_at: defaultValue "NOW()" -> "now("",
+    "products.id: type "UUID" -> "VARCHAR"",
+    "products.id: isUnique true -> false",
+    "products.category_id: onDelete "SET NULL" -> undefined",
+    "products.created_at: defaultValue "NOW()" -> "now("",
+    "users.id: type "UUID" -> "VARCHAR"",
+    "users.id: isUnique true -> false",
+    "users.id: defaultValue "gen_random_uuid()" -> "uuid("",
+    "users.created_at: defaultValue "NOW()" -> "now("",
+  ],
+  "enumsLost": [],
+  "foreignKeysLost": [
+    "orders.user_id -> users.id",
+    "products.category_id -> categories.id",
+  ],
+  "primaryKeysLost": [],
+  "schemasLost": [
+    "auth",
+    "catalog",
+    "sales",
+  ],
+  "tablesGained": [
+    "orderitems",
+  ],
+  "tablesLost": [
+    "order_items",
+  ],
+}
+`;
+
+exports[`round trip > ecommerce > reports its sql losses 1`] = `
+{
+  "columnDiffs": [
+    "categories.id: type "INT" -> "UUID"",
+    "categories.id: isAutoIncrement true -> false",
+    "categories.name: column dropped",
+    "categories.slug: column dropped",
+    "categories.description: column dropped",
+    "order_items.id: type "INT" -> "UUID"",
+    "order_items.id: isAutoIncrement true -> false",
+    "order_items.order_id: column dropped",
+    "order_items.product_id: column dropped",
+    "order_items.quantity: column dropped",
+    "order_items.unit_price: column dropped",
+    "orders.user_id: column dropped",
+    "orders.total_amount: column dropped",
+    "orders.status: column dropped",
+    "orders.created_at: column dropped",
+    "products.title: column dropped",
+    "products.price: column dropped",
+    "products.stock_quantity: column dropped",
+    "products.category_id: column dropped",
+    "products.created_at: column dropped",
+    "users.id: defaultValue "gen_random_uuid()" -> undefined",
+    "users.email: column dropped",
+    "users.password_hash: column dropped",
+    "users.full_name: column dropped",
+    "users.is_active: column dropped",
+    "users.created_at: column dropped",
+  ],
+  "enumsLost": [
+    "OrderStatus",
+  ],
+  "foreignKeysLost": [],
+  "primaryKeysLost": [],
+  "schemasLost": [],
+  "tablesGained": [],
+  "tablesLost": [],
+}
+`;
+
+exports[`round trip > ecommerce > reports its typeorm losses 1`] = `
+{
+  "columnDiffs": [
+    "categories.id: isUnique true -> false",
+    "categories.id: isAutoIncrement true -> false",
+    "categories.description: type "TEXT" -> "VARCHAR"",
+    "orders.id: type "UUID" -> "VARCHAR"",
+    "orders.id: isUnique true -> false",
+    "orders.user_id: column dropped",
+    "orders.total_amount: type "DECIMAL" -> "INT"",
+    "orders.status: type "ENUM" -> "VARCHAR"",
+    "orders.status: enumName "OrderStatus" -> undefined",
+    "orders.status: defaultValue "pending" -> "OrderStatus.PENDING"",
+    "orders.created_at: defaultValue "NOW()" -> "'NOW()'"",
+    "products.id: type "UUID" -> "VARCHAR"",
+    "products.id: isUnique true -> false",
+    "products.price: type "DECIMAL" -> "INT"",
+    "products.stock_quantity: defaultValue "0" -> "'0'"",
+    "products.category_id: column dropped",
+    "products.created_at: defaultValue "NOW()" -> "'NOW()'"",
+    "users.id: type "UUID" -> "VARCHAR"",
+    "users.id: isUnique true -> false",
+    "users.id: defaultValue "gen_random_uuid()" -> undefined",
+    "users.is_active: defaultValue "true" -> "'true'"",
+    "users.created_at: defaultValue "NOW()" -> "'NOW()'"",
+  ],
+  "enumsLost": [],
+  "foreignKeysLost": [],
+  "primaryKeysLost": [
+    "categories.id",
+    "orders.id",
+    "products.id",
+    "users.id",
+  ],
+  "schemasLost": [],
+  "tablesGained": [
+    "orderitems",
+  ],
+  "tablesLost": [
+    "order_items",
+  ],
+}
+`;
+
+exports[`round trip > saas > reports its drizzle losses 1`] = `
+{
+  "columnDiffs": [
+    "organizations.id: type "UUID" -> "TEXT"",
+    "organizations.id: isUnique true -> false",
+    "organizations.name: isNullable false -> true",
+    "organizations.slug: isNullable false -> true",
+    "organizations.slug: isUnique true -> false",
+    "subscriptions.id: type "UUID" -> "TEXT"",
+    "subscriptions.id: isUnique true -> false",
+    "subscriptions.org_id: type "UUID" -> "TEXT"",
+    "subscriptions.org_id: onDelete "CASCADE" -> undefined",
+    "subscriptions.stripe_customer_id: isUnique true -> false",
+    "subscriptions.plan_tier: type "ENUM" -> "TEXT"",
+    "subscriptions.plan_tier: enumName "PlanTier" -> undefined",
+    "subscriptions.plan_tier: defaultValue "pro" -> undefined",
+    "subscriptions.is_active: defaultValue "true" -> undefined",
+    "users.id: type "UUID" -> "TEXT"",
+    "users.id: isUnique true -> false",
+    "users.email: isNullable false -> true",
+    "users.email: isUnique true -> false",
+  ],
+  "enumsLost": [
+    "PlanTier",
+  ],
+  "foreignKeysLost": [
+    "subscriptions.org_id -> organizations.id",
+  ],
+  "primaryKeysLost": [],
+  "schemasLost": [
+    "billing",
+    "core",
+  ],
+  "tablesGained": [],
+  "tablesLost": [],
+}
+`;
+
+exports[`round trip > saas > reports its mikroorm losses 1`] = `
+{
+  "columnDiffs": [
+    "organizations.id: type "UUID" -> "VARCHAR"",
+    "organizations.id: isUnique true -> false",
+    "subscriptions.id: type "UUID" -> "VARCHAR"",
+    "subscriptions.id: isUnique true -> false",
+    "subscriptions.org_id: column dropped",
+    "subscriptions.plan_tier: defaultValue "pro" -> "PlanTier.PRO"",
+    "subscriptions.is_active: defaultValue "true" -> "'true'"",
+    "users.id: type "UUID" -> "VARCHAR"",
+    "users.id: isUnique true -> false",
+  ],
+  "enumsLost": [],
+  "foreignKeysLost": [],
+  "primaryKeysLost": [],
+  "schemasLost": [],
+  "tablesGained": [],
+  "tablesLost": [],
+}
+`;
+
+exports[`round trip > saas > reports its prisma losses 1`] = `
+{
+  "columnDiffs": [
+    "organizations.id: type "UUID" -> "VARCHAR"",
+    "organizations.id: isUnique true -> false",
+    "subscriptions.id: type "UUID" -> "VARCHAR"",
+    "subscriptions.id: isUnique true -> false",
+    "subscriptions.org_id: type "UUID" -> "VARCHAR"",
+    "subscriptions.org_id: onDelete "CASCADE" -> undefined",
+    "users.id: type "UUID" -> "VARCHAR"",
+    "users.id: isUnique true -> false",
+  ],
+  "enumsLost": [],
+  "foreignKeysLost": [
+    "subscriptions.org_id -> organizations.id",
+  ],
+  "primaryKeysLost": [],
+  "schemasLost": [
+    "billing",
+    "core",
+  ],
+  "tablesGained": [],
+  "tablesLost": [],
+}
+`;
+
+exports[`round trip > saas > reports its sql losses 1`] = `
+{
+  "columnDiffs": [
+    "organizations.name: column dropped",
+    "organizations.slug: column dropped",
+    "subscriptions.org_id: column dropped",
+    "subscriptions.stripe_customer_id: column dropped",
+    "subscriptions.plan_tier: column dropped",
+    "subscriptions.is_active: column dropped",
+    "users.email: column dropped",
+    "users.avatar_url: column dropped",
+  ],
+  "enumsLost": [
+    "PlanTier",
+  ],
+  "foreignKeysLost": [],
+  "primaryKeysLost": [],
+  "schemasLost": [],
+  "tablesGained": [],
+  "tablesLost": [],
+}
+`;
+
+exports[`round trip > saas > reports its typeorm losses 1`] = `
+{
+  "columnDiffs": [
+    "organizations.id: type "UUID" -> "VARCHAR"",
+    "organizations.id: isUnique true -> false",
+    "subscriptions.id: type "UUID" -> "VARCHAR"",
+    "subscriptions.id: isUnique true -> false",
+    "subscriptions.org_id: column dropped",
+    "subscriptions.plan_tier: type "ENUM" -> "VARCHAR"",
+    "subscriptions.plan_tier: enumName "PlanTier" -> undefined",
+    "subscriptions.plan_tier: defaultValue "pro" -> "PlanTier.PRO"",
+    "subscriptions.is_active: defaultValue "true" -> "'true'"",
+    "users.id: type "UUID" -> "VARCHAR"",
+    "users.id: isUnique true -> false",
+  ],
+  "enumsLost": [],
+  "foreignKeysLost": [],
+  "primaryKeysLost": [
+    "organizations.id",
+    "subscriptions.id",
+    "users.id",
+  ],
+  "schemasLost": [],
+  "tablesGained": [],
+  "tablesLost": [],
+}
+`;

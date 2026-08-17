@@ -16,8 +16,9 @@ export function parseMikroOrmToProject(codeText: string, currentProject: Databas
   let enumY = 80;
 
   while ((enumMatch = enumRegex.exec(codeText)) !== null) {
-    const enumName = enumMatch[1];
-    const body = enumMatch[2];
+    // Groups 1 and 2 are non-optional in enumRegex.
+    const enumName = enumMatch[1]!;
+    const body = enumMatch[2]!;
 
     const values: string[] = [];
     const lines = body.split('\n');
@@ -28,11 +29,11 @@ export function parseMikroOrmToProject(codeText: string, currentProject: Databas
 
       const valMatch = /(\w+)\s*=\s*['"]([^'"]+)['"]/.exec(line);
       if (valMatch) {
-        values.push(valMatch[2]);
+        values.push(valMatch[2]!);
       } else {
         const simpleMatch = /^(\w+),?$/.exec(line);
         if (simpleMatch) {
-          values.push(simpleMatch[1]);
+          values.push(simpleMatch[1]!);
         }
       }
     }
@@ -58,7 +59,7 @@ export function parseMikroOrmToProject(codeText: string, currentProject: Databas
   while ((match = entityRegex.exec(codeText)) !== null) {
     const optsObjStr = match[1] || '';
     const simpleTableName = match[2] || '';
-    const className = match[3];
+    const className = match[3]!;
     const classBody = match[4] || '';
 
     let tableName = simpleTableName || className.toLowerCase();
@@ -66,10 +67,10 @@ export function parseMikroOrmToProject(codeText: string, currentProject: Databas
 
     if (optsObjStr) {
       const tableMatch = /tableName\s*:\s*['"](\w+)['"]/.exec(optsObjStr);
-      if (tableMatch) tableName = tableMatch[1];
+      if (tableMatch) tableName = tableMatch[1]!;
 
       const schemaMatch = /schema\s*:\s*['"](\w+)['"]/.exec(optsObjStr);
-      if (schemaMatch) schemaName = schemaMatch[1].toLowerCase();
+      if (schemaMatch) schemaName = schemaMatch[1]!.toLowerCase();
     }
 
     let schemaId = currentProject.schemas[0]?.id;
@@ -78,7 +79,7 @@ export function parseMikroOrmToProject(codeText: string, currentProject: Databas
         const newSchema: SchemaGroup = {
           id: `schema-${schemaName}-${Date.now()}`,
           name: schemaName,
-          color: colors[colorIdx++ % colors.length]
+          color: colors[colorIdx++ % colors.length]!
         };
         schemasMap.set(schemaName, newSchema);
       }
@@ -104,9 +105,10 @@ export function parseMikroOrmToProject(codeText: string, currentProject: Databas
       const propMatch = propRegex.exec(line);
 
       if (propMatch && currentDecorators.length > 0) {
-        const propName = propMatch[1];
+        // Groups 1 and 3 are non-optional in propRegex; only 2 and 4 can be absent.
+        const propName = propMatch[1]!;
         const isOptional = propMatch[2] === '?';
-        const rawTsType = propMatch[3];
+        const rawTsType = propMatch[3]!;
         const rawDefaultVal = propMatch[4]?.replace(';', '').trim();
 
         const combinedDec = currentDecorators.join(' ');
@@ -134,9 +136,9 @@ export function parseMikroOrmToProject(codeText: string, currentProject: Databas
         const defaultMatch = /default\s*:\s*([^,}]+)/.exec(combinedDec);
         const defaultRawMatch = /defaultRaw\s*:\s*['"]([^'"]+)['"]/.exec(combinedDec);
         if (defaultRawMatch) {
-          defaultValue = defaultRawMatch[1];
+          defaultValue = defaultRawMatch[1]!;
         } else if (defaultMatch) {
-          defaultValue = defaultMatch[1].trim();
+          defaultValue = defaultMatch[1]!.trim();
         }
 
         columns.push({

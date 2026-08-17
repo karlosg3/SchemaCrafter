@@ -1,4 +1,5 @@
-import type { DatabaseProject, Table, DataType } from '../types/schema';
+import type { DatabaseProject, Table } from '../types/schema';
+import { formatClassName, getSchemaName, mapTsType } from '../utils/naming';
 
 export function generateMikroOrmSchema(project: DatabaseProject): string {
   let code = `import { Entity, PrimaryKey, Property, ManyToOne, Enum } from '@mikro-orm/core';\n\n`;
@@ -90,39 +91,5 @@ export function generateMikroOrmSchema(project: DatabaseProject): string {
   return code.trim();
 }
 
-function getSchemaName(project: DatabaseProject, schemaId: string): string {
-  return project.schemas.find(s => s.id === schemaId)?.name || 'public';
-}
 
-function mapTsType(type: DataType): string {
-  switch (type) {
-    case 'INT':
-    case 'BIGINT':
-    case 'DECIMAL':
-    case 'FLOAT':
-      return 'number';
-    case 'VARCHAR':
-    case 'TEXT':
-    case 'UUID':
-    case 'ENUM':
-      return 'string';
-    case 'BOOLEAN':
-      return 'boolean';
-    case 'TIMESTAMP':
-    case 'DATE':
-      return 'Date';
-    case 'JSON':
-      return 'any';
-    default:
-      return 'string';
-  }
-}
 
-function formatClassName(name: string): string {
-  return name
-    .replace(/[^a-zA-Z0-9]/g, '_')
-    .split('_')
-    .filter(Boolean)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join('');
-}

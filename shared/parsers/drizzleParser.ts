@@ -11,8 +11,9 @@ export function parseDrizzleToProject(codeText: string, currentProject: Database
   let y = 80;
 
   while ((match = tableRegex.exec(codeText)) !== null) {
-    const tableName = match[2];
-    const body = match[3];
+    // Groups 2 and 3 are non-optional in tableRegex, so both are present here.
+    const tableName = match[2]!;
+    const body = match[3]!;
 
     const columns: Column[] = [];
     const lines = body.split('\n');
@@ -25,11 +26,12 @@ export function parseDrizzleToProject(codeText: string, currentProject: Database
       const parts = line.split(':');
       if (parts.length < 2) continue;
 
-      const colName = parts[0].trim();
-      const rightHand = parts[1].trim();
+      // Both indexes are guaranteed by the `parts.length < 2` guard above.
+      const colName = parts[0]!.trim();
+      const rightHand = parts[1]!.trim();
 
       const typeMatch = /^(serial|varchar|text|integer|boolean|timestamp|decimal|json|real)/.exec(rightHand);
-      const drizzleType = typeMatch ? typeMatch[1] : 'text';
+      const drizzleType = typeMatch?.[1] ?? 'text';
 
       const type: DataType = mapDrizzleTypeToDataType(drizzleType);
       const isPrimaryKey = rightHand.includes('.primaryKey()');
