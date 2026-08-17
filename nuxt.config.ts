@@ -49,6 +49,38 @@ export default defineNuxtConfig({
     }
   },
 
+  /**
+   * CodeMirror identifies both its facets and its highlighting tags by object
+   * identity. Vite pre-bundles each `@codemirror/*` package separately and will
+   * happily give two of them their own copy of `@lezer/highlight`, at which
+   * point the tags a language emits are different objects from the tags a
+   * HighlightStyle matches on — the syntax tree parses correctly and not one
+   * token gets coloured. Deduping is what keeps them the same objects.
+   */
+  vite: {
+    resolve: {
+      dedupe: [
+        '@codemirror/state',
+        '@codemirror/view',
+        '@codemirror/language',
+        '@lezer/common',
+        '@lezer/highlight'
+      ]
+    },
+    optimizeDeps: {
+      include: [
+        '@codemirror/state',
+        '@codemirror/view',
+        '@codemirror/language',
+        '@codemirror/commands',
+        '@codemirror/lang-javascript',
+        '@codemirror/lang-sql',
+        '@lezer/common',
+        '@lezer/highlight'
+      ]
+    }
+  },
+
   typescript: {
     typeCheck: false,
     strict: true

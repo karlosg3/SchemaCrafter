@@ -28,7 +28,8 @@ export default defineConfig({
             'test/projection.test.ts',
             'test/migration.test.ts',
             'test/graph.test.ts',
-            'test/importSql.test.ts'
+            'test/importSql.test.ts',
+            'test/codeDiff.test.ts'
           ]
         }
       },
