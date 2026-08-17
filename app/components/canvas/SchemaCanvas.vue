@@ -2,9 +2,8 @@
 import { VueFlow } from '@vue-flow/core'
 import type { Connection, VueFlowStore } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
-import type { BlockKind, BlockNodeData, BlockRow, GraphNode, StubNodeData } from '#shared/utils/graph'
+import type { BlockNodeData, BlockRow, GraphNode, StubNodeData } from '#shared/utils/graph'
 import { buildGraph, columnIdFromHandle } from '#shared/utils/graph'
-import { uniqueName } from '#shared/utils/ids'
 import { useUiStore } from '~/stores/ui'
 import { useWorkspaceStore } from '~/stores/workspace'
 
@@ -15,11 +14,7 @@ const ui = useUiStore()
 const workspace = useWorkspaceStore()
 const toast = useToast()
 const confirm = useConfirm()
-
-const emit = defineEmits<{
-  /** Opening an entity's form is the modals' job — see P5. */
-  edit: [payload: { kind: BlockKind, id: string }]
-}>()
+const dialogs = useEntityDialogs()
 
 /** Prototype zoom clamps. */
 const MIN_ZOOM = 0.4
@@ -171,65 +166,42 @@ function onStubActivate(data: StubNodeData) {
   if (data.schemaId) ui.drillInto('tables', data.schemaId)
 }
 
-function onRowClick(row: BlockRow) {
-  if (!row.action) return
-  if (row.action.kind === 'drill') ui.drillInto(row.action.level, row.action.id)
-  else emit('edit', { kind: row.action.target, id: row.action.id })
-}
-
-function onAdd(id: string, data: BlockNodeData) {
-  switch (data.kind) {
-    case 'database': {
-      const created = workspace.createSchema(id, 'new_schema')
-      if (created) emit('edit', { kind: 'schema', id: created.id })
-      break
-    }
-    case 'schema': {
-      const created = workspace.createTable(id)
-      if (created) emit('edit', { kind: 'table', id: created.id })
-      break
-    }
-    case 'table':
-      workspace.addColumn(id)
-      break
-    case 'enum': {
-      const e = workspace.enumEntity(id)
-      if (e) workspace.updateEnum(id, { values: [...e.values, uniqueName('VALUE', e.values)] })
-      break
-    }
+function onRowClick(node: GraphNode, row: BlockRow) {
+  if (!row.action || node.type !== 'block') return
+  if (row.action.kind === 'drill') {
+    ui.drillInto(row.action.level, row.action.id)
+  } else if (row.action.target === 'column') {
+    dialogs.editColumn(node.id, row.action.id)
+  } else {
+    dialogs.edit(row.action.target, row.action.id)
   }
 }
 
-async function onRemove(id: string, data: BlockNodeData) {
-  if (!await confirm(`Delete ${data.kind} "${data.name}"? This cannot be undone.`)) return
-  removeEntity(data.kind, id)
+/** The footer button means "add one of whatever this block lists". */
+function onAdd(id: string, data: BlockNodeData) {
+  if (data.kind === 'database') dialogs.createSchema(id)
+  else if (data.kind === 'schema') dialogs.createTable(id)
+  else if (data.kind === 'table') dialogs.editColumn(id)
+  // Values have no identity of their own, so they are edited on the enum.
+  else dialogs.editEnum(id)
+}
+
+function onRemove(id: string, data: BlockNodeData) {
+  dialogs.remove(data.kind, id)
 }
 
 async function onRowRemove(node: GraphNode, row: BlockRow) {
   if (node.type !== 'block') return
 
-  // A row means a different thing at every level, so the parent decides.
-  if (node.data.kind === 'database') {
-    if (await confirm(`Delete schema "${row.label}"?`)) workspace.deleteSchema(row.id)
-    return
-  }
-  if (node.data.kind === 'schema') {
-    if (await confirm(`Delete table "${row.label}"? This cannot be undone.`)) workspace.deleteTable(row.id)
-    return
-  }
-  if (node.data.kind === 'table') {
-    if (await confirm(`Delete column "${row.label}"?`)) workspace.deleteColumn(node.id, row.id)
-    return
-  }
-  const e = workspace.enumEntity(node.id)
-  if (e) workspace.updateEnum(node.id, { values: e.values.filter(v => v !== row.label) })
-}
+  // A row means a different thing at every level, so the block decides.
+  if (node.data.kind === 'database') return dialogs.remove('schema', row.id)
+  if (node.data.kind === 'schema') return dialogs.remove('table', row.id)
+  if (node.data.kind === 'table') return dialogs.removeColumn(node.id, row.id)
 
-function removeEntity(kind: BlockKind, id: string) {
-  if (kind === 'database') workspace.deleteDatabase(id)
-  else if (kind === 'schema') workspace.deleteSchema(id)
-  else if (kind === 'table') workspace.deleteTable(id)
-  else workspace.deleteEnum(id)
+  const entity = workspace.enumEntity(node.id)
+  if (!entity) return
+  if (!await confirm({ title: 'Remove value?', message: `"${row.label}" will be removed from ${entity.name}.` })) return
+  workspace.updateEnum(node.id, { values: entity.values.filter(v => v !== row.label) })
 }
 </script>
 
@@ -257,10 +229,10 @@ function removeEntity(kind: BlockKind, id: string) {
         :selected="blockProps.selected"
         :editable="ui.state.editable"
         :validate-connection="isValidConnection"
-        @edit="emit('edit', { kind: blockProps.data.kind, id: blockProps.id })"
+        @edit="dialogs.edit(blockProps.data.kind, blockProps.id)"
         @remove="onRemove(blockProps.id, blockProps.data)"
         @add="onAdd(blockProps.id, blockProps.data)"
-        @row-click="onRowClick"
+        @row-click="row => onRowClick(nodeById(blockProps.id)!, row)"
         @row-remove="row => onRowRemove(nodeById(blockProps.id)!, row)"
         @resize-end="size => onResizeEnd(nodeById(blockProps.id)!, size)"
       />

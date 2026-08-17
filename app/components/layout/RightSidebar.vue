@@ -47,6 +47,30 @@ const code = computed(() => {
 
 const lines = computed(() => code.value.split('\n'))
 const lang = computed(() => TARGETS.find(t => t.value === ui.state.codeTarget)?.lang ?? 'text')
+
+const toast = useToast()
+
+/**
+ * Audit CE-10: the React app fired confetti on the same tick it called
+ * `writeText`, so a denied permission still celebrated and copied nothing.
+ */
+async function copy() {
+  if (!code.value) return
+  if (!await copyText(code.value)) {
+    toast.add({ title: 'Could not copy', description: 'Clipboard access was denied.', color: 'error' })
+    return
+  }
+  toast.add({ title: 'Copied to clipboard', color: 'success' })
+  const { default: confetti } = await import('canvas-confetti')
+  confetti({ particleCount: 60, spread: 55, origin: { x: 0.85, y: 0.9 }, disableForReducedMotion: true })
+}
+
+function download() {
+  const dbId = ui.activeDbId
+  if (!dbId || !code.value) return
+  const name = workspace.database(dbId)?.name ?? 'schema'
+  downloadText(codeFileName(name, ui.state.codeTarget), code.value)
+}
 </script>
 
 <template>
@@ -95,8 +119,24 @@ const lang = computed(() => TARGETS.find(t => t.value === ui.state.codeTarget)?.
       <span class="text-[10.5px] text-ink-faint font-mono">{{ lines.length }} lines</span>
 
       <div class="ml-auto flex items-center gap-0.5">
-        <UButton icon="i-ph-copy" color="neutral" variant="ghost" size="xs" aria-label="Copy code" disabled />
-        <UButton icon="i-ph-download-simple" color="neutral" variant="ghost" size="xs" aria-label="Download file" disabled />
+        <UButton
+          icon="i-ph-copy"
+          color="neutral"
+          variant="ghost"
+          size="xs"
+          aria-label="Copy code"
+          :disabled="!code"
+          @click="copy()"
+        />
+        <UButton
+          icon="i-ph-download-simple"
+          color="neutral"
+          variant="ghost"
+          size="xs"
+          aria-label="Download file"
+          :disabled="!code"
+          @click="download()"
+        />
       </div>
     </div>
   </div>

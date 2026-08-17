@@ -27,7 +27,8 @@ export default defineConfig({
             'test/roundtrip.test.ts',
             'test/projection.test.ts',
             'test/migration.test.ts',
-            'test/graph.test.ts'
+            'test/graph.test.ts',
+            'test/importSql.test.ts'
           ]
         }
       },

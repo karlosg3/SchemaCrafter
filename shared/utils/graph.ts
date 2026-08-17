@@ -37,8 +37,13 @@ export interface BlockRow {
   isPrimaryKey?: boolean
   /** Tables level only: the row exposes a pair of connection handles. */
   connectable?: boolean
-  /** What clicking the row does. */
-  action?: { kind: 'drill', level: ViewLevel, id: string } | { kind: 'edit', target: BlockKind, id: string }
+  /**
+   * What clicking the row does. A `column` target is addressed relative to the
+   * block it sits in — the id alone does not say which table owns it.
+   */
+  action?:
+    | { kind: 'drill', level: ViewLevel, id: string }
+    | { kind: 'edit', target: BlockKind | 'column', id: string }
   deletable?: boolean
   /** Why deletion is unavailable, surfaced as a tooltip. */
   deleteHint?: string
@@ -289,7 +294,7 @@ function tablesGraph(ws: Workspace, options: GraphOptions): Graph {
           : undefined,
         isPrimaryKey: col.isPrimaryKey,
         connectable: true,
-        action: { kind: 'edit', target: 'table', id: t.id },
+        action: { kind: 'edit', target: 'column', id: col.id },
         deletable: options.editable
       })),
       rowHeight: BLOCK.rowHeight,

@@ -24,12 +24,26 @@ export function parseSqlToProject(codeText: string, currentProject: DatabaseProj
     }
   }
 
-  // Clean comments
-  const cleanSql = codeText
+  // Clean comments. The trailing semicolon is guaranteed because the body
+  // pattern below anchors on one; a final statement without it would otherwise
+  // be skipped entirely.
+  const cleanSql = `${codeText
     .replace(/--.*$/gm, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '');
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .trimEnd()
+    .replace(/;$/, '')};`;
 
-  const createTableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:[`"']?(\w+)[`"']?\.)?[`"']?(\w+)[`"']?\s*\(([\s\S]*?)\)?;?/gim;
+  /**
+   * The body group used to be `([\s\S]*?)\)?;?` — lazy, with both the closing
+   * paren and the semicolon optional, so it always matched the empty string.
+   * Every table came back with no columns and fell through to the synthetic
+   * `id UUID` below, which is what the sql column losses in the round-trip
+   * snapshot were. Requiring `)` followed by `;` makes the lazy match run to
+   * the real end of the statement while still stopping short of the next one;
+   * a `)` inside the body, as in `DEFAULT gen_random_uuid()`, is followed by a
+   * comma or a newline rather than a semicolon and no longer terminates it.
+   */
+  const createTableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:[`"']?(\w+)[`"']?\.)?[`"']?(\w+)[`"']?\s*\(([\s\S]*?)\)\s*;/gim;
 
   let match: RegExpExecArray | null;
   let x = 80;

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Gradient } from '#shared/types/workspace'
 
-defineProps<{
+withDefaults(defineProps<{
   label: string
   gradient?: Gradient
   count?: number | string
@@ -9,7 +9,14 @@ defineProps<{
   deletable?: boolean
   /** Why deletion is unavailable, surfaced as a tooltip. */
   deleteHint?: string
-}>()
+}>(), {
+  // Vue casts an omitted Boolean prop to `false`, not `undefined`, so without
+  // this the panels that never restrict deletion got a dead delete button.
+  deletable: true,
+  gradient: undefined,
+  count: undefined,
+  deleteHint: undefined
+})
 
 const emit = defineEmits<{
   select: []
@@ -72,7 +79,7 @@ const emit = defineEmits<{
           variant="ghost"
           size="xs"
           :aria-label="`Delete ${label}`"
-          :disabled="deletable === false"
+          :disabled="!deletable"
           class="hover:text-red-400"
           @click="emit('remove')"
         />

@@ -1,19 +1,35 @@
 <script setup lang="ts">
+import { generateCodeForTarget } from '#shared/generators/index'
+import { slugify } from '#shared/utils/ids'
 import { useUiStore } from '~/stores/ui'
 import { useWorkspaceStore } from '~/stores/workspace'
 
 const ui = useUiStore()
 const workspace = useWorkspaceStore()
-
-const emit = defineEmits<{
-  importSql: []
-  download: [format: 'sql' | 'json']
-}>()
+const dialogs = useEntityDialogs()
+const toast = useToast()
 
 const downloadItems = [[
-  { label: 'Download SQL', icon: 'i-ph-file-sql', onSelect: () => emit('download', 'sql') },
-  { label: 'Download JSON', icon: 'i-ph-brackets-curly', onSelect: () => emit('download', 'json') }
+  { label: 'Download SQL', icon: 'i-ph-file-sql', onSelect: () => download('sql') },
+  { label: 'Download JSON', icon: 'i-ph-brackets-curly', onSelect: () => download('json') }
 ]]
+
+function download(format: 'sql' | 'json') {
+  const dbId = ui.activeDbId
+  if (!dbId) return
+
+  const project = workspace.projectFor(dbId)
+  if (format === 'json') {
+    downloadText(`${slugify(project.name)}.json`, JSON.stringify(project, null, 2), 'application/json')
+  } else {
+    downloadText(codeFileName(project.name, 'sql'), generateCodeForTarget(project, 'sql'), 'application/sql')
+  }
+  toast.add({ title: `Exported ${format.toUpperCase()}`, color: 'success' })
+}
+
+function onImport() {
+  if (ui.activeDbId) dialogs.importSql(ui.activeDbId)
+}
 
 const activeName = computed(() => ui.activeDatabase?.name ?? 'No database')
 const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ?? 'postgresql')
@@ -64,7 +80,7 @@ const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ??
         color="neutral"
         variant="outline"
         size="sm"
-        @click="emit('importSql')"
+        @click="onImport()"
       />
 
       <UDropdownMenu :items="downloadItems" :content="{ align: 'end' }">

@@ -1,14 +1,25 @@
+import ConfirmModal from '~/components/modals/ConfirmModal.vue'
+
+export interface ConfirmOptions {
+  title?: string
+  message: string
+  confirmLabel?: string
+}
+
 /**
- * Confirmation gate for destructive canvas actions.
+ * Confirmation gate for destructive actions.
  *
- * Deliberately a seam: the canvas calls `await confirm(...)` and does not care
- * how the question is asked. P5 swaps the body for `useOverlay()` on a `UModal`,
- * which is also what deletes the React app's `confirmModalData.onConfirm`
- * closure — the app-level state slice that existed only to carry a callback.
+ * `useOverlay()` returns a promise, so a delete reads as
+ * `if (await confirm(...)) store.deleteTable(id)` — no callback threaded
+ * through app state, and Escape and the focus trap come from `UModal`
+ * (audit UI-2).
  */
 export function useConfirm() {
-  return async function confirm(message: string): Promise<boolean> {
-    if (import.meta.server) return false
-    return window.confirm(message)
+  const overlay = useOverlay()
+
+  return async function confirm(options: ConfirmOptions | string): Promise<boolean> {
+    const props = typeof options === 'string' ? { message: options } : options
+    const result = await overlay.create(ConfirmModal, { destroyOnClose: true }).open(props)
+    return result === true
   }
 }
