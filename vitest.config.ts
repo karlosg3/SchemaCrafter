@@ -26,7 +26,8 @@ export default defineConfig({
             'test/generators.snapshot.test.ts',
             'test/roundtrip.test.ts',
             'test/projection.test.ts',
-            'test/migration.test.ts'
+            'test/migration.test.ts',
+            'test/graph.test.ts'
           ]
         }
       },

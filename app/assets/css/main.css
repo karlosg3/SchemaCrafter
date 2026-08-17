@@ -121,6 +121,90 @@ body {
   }
 }
 
+/*
+ * Vue Flow.
+ *
+ * Only @vue-flow/core/dist/style.css is imported (in SchemaCanvas.vue) — it
+ * carries the positioning the library cannot work without. theme-default.css is
+ * deliberately left out: it paints a light-mode canvas we would override in
+ * full. Selectors are qualified with the library's own class so they win
+ * regardless of which stylesheet Vite emits first.
+ */
+.vue-flow__handle.sc-handle {
+  width: 9px;
+  height: 9px;
+  border-radius: 0;
+  background: var(--color-surface-block);
+  border: 2px solid var(--color-line-panel);
+  opacity: 0;
+  transition: opacity 120ms ease, border-color 120ms ease, background-color 120ms ease;
+}
+
+/*
+ * Sit the handle *inside* the block rather than straddling its edge. The block
+ * clips its content, so the library's default translate(-50%) put half the hit
+ * area — and on the boundary pixel, elementFromPoint — outside the clip, and
+ * connections silently failed to start.
+ */
+.vue-flow__handle-left.sc-handle {
+  left: 0;
+  transform: translate(0, -50%);
+}
+
+.vue-flow__handle-right.sc-handle {
+  right: 0;
+  transform: translate(0, -50%);
+}
+
+/* Revealed with the block, so 20 column handles are not permanent noise. */
+.vue-flow__node:hover .vue-flow__handle.sc-handle,
+.vue-flow__node.selected .vue-flow__handle.sc-handle,
+.vue-flow.connecting .vue-flow__handle.sc-handle {
+  opacity: 1;
+}
+
+.vue-flow__handle.sc-handle:hover,
+.vue-flow__handle.sc-handle.connectingto {
+  background: var(--color-accent-500);
+  border-color: var(--color-accent-400);
+}
+
+/* Attachment points for derived edges; never grabbable, never visible. */
+.vue-flow__handle.sc-handle-hidden {
+  width: 1px;
+  height: 1px;
+  min-width: 1px;
+  min-height: 1px;
+  border: 0;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vue-flow__connection-path {
+  stroke: var(--color-accent-500);
+  stroke-width: 2;
+}
+
+.vue-flow__resize-control.sc-resize-line {
+  border-color: var(--color-accent-500);
+  opacity: 0;
+}
+
+.vue-flow__resize-control.sc-resize-handle {
+  width: 7px;
+  height: 7px;
+  border: 2px solid var(--color-accent-400);
+  border-radius: 0;
+  background: var(--color-surface-block);
+  opacity: 0;
+}
+
+.vue-flow__node:hover .vue-flow__resize-control,
+.vue-flow__node.selected .vue-flow__resize-control {
+  opacity: 1;
+}
+
 @utility scrollbar-thin {
   &::-webkit-scrollbar {
     width: 10px;

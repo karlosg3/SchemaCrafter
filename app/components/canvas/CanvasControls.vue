@@ -1,18 +1,16 @@
 <script setup lang="ts">
+import { useVueFlow } from '@vue-flow/core'
 import type { ViewLevel } from '~/stores/ui'
 import { useUiStore } from '~/stores/ui'
 
 const ui = useUiStore()
 
-const props = defineProps<{
-  zoom: number
-}>()
-
-const emit = defineEmits<{
-  zoomIn: []
-  zoomOut: []
-  fitView: []
-}>()
+/**
+ * Rendered inside <VueFlow>'s default slot, which sits outside the transformed
+ * viewport — so these islands stay put while the canvas pans and zooms, and
+ * they can reach the flow instance by injection rather than by prop.
+ */
+const { zoomIn, zoomOut, fitView, viewport } = useVueFlow()
 
 const LEVELS: { level: ViewLevel, label: string }[] = [
   { level: 'databases', label: 'Databases' },
@@ -27,7 +25,11 @@ const DISPLAY = [
   { key: 'editable', label: 'Editable' }
 ] as const
 
-const zoomPercent = computed(() => `${Math.round(props.zoom * 100)}%`)
+const zoomPercent = computed(() => `${Math.round(viewport.value.zoom * 100)}%`)
+
+function onFitView() {
+  fitView({ padding: 0.2, maxZoom: 1 })
+}
 </script>
 
 <template>
@@ -74,19 +76,19 @@ const zoomPercent = computed(() => `${Math.round(props.zoom * 100)}%`)
 
   <!-- Bottom left: zoom -->
   <div class="absolute bottom-4 left-4 z-10 sc-panel flex items-center gap-0.5 p-[3px]">
-    <UButton icon="i-ph-minus" color="neutral" variant="ghost" size="xs" aria-label="Zoom out" @click="emit('zoomOut')" />
+    <UButton icon="i-ph-minus" color="neutral" variant="ghost" size="xs" aria-label="Zoom out" @click="zoomOut()" />
     <button
       type="button"
       class="px-1.5 text-[11px] font-mono text-ink-muted hover:text-ink-bright min-w-12
              focus-visible:outline-2 focus-visible:outline-accent-500"
       aria-label="Fit view"
-      @click="emit('fitView')"
+      @click="onFitView()"
     >
       {{ zoomPercent }}
     </button>
-    <UButton icon="i-ph-plus" color="neutral" variant="ghost" size="xs" aria-label="Zoom in" @click="emit('zoomIn')" />
+    <UButton icon="i-ph-plus" color="neutral" variant="ghost" size="xs" aria-label="Zoom in" @click="zoomIn()" />
     <span class="w-px h-4 bg-line-panel mx-0.5" />
-    <UButton icon="i-ph-corners-out" color="neutral" variant="ghost" size="xs" aria-label="Fit view" @click="emit('fitView')" />
+    <UButton icon="i-ph-corners-out" color="neutral" variant="ghost" size="xs" aria-label="Fit view" @click="onFitView()" />
   </div>
 
   <!-- Top right: display options -->
