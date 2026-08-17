@@ -16,6 +16,10 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
+  // Directories under components/ are organisational only. Without this, a file
+  // at components/layout/AppNavbar.vue would have to be written <LayoutAppNavbar>.
+  components: [{ path: '~/components', pathPrefix: false }],
+
   colorMode: {
     preference: 'dark',
     fallback: 'dark'

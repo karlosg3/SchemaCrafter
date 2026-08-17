@@ -16,8 +16,6 @@ interface PersistedUiState {
   railTab: RailTab
   leftOpen: boolean
   rightOpen: boolean
-  leftWidth: number
-  rightWidth: number
   codeTarget: ORMTarget
   showRelations: boolean
   showEnums: boolean
@@ -32,9 +30,6 @@ const DEFAULTS: PersistedUiState = {
   railTab: 'databases',
   leftOpen: true,
   rightOpen: true,
-  // Prototype: left sidebar min(280, 20vw), right min(440, 30vw).
-  leftWidth: 280,
-  rightWidth: 440,
   codeTarget: 'prisma',
   // The four toggles behind the canvas gear popover.
   showRelations: true,
@@ -43,9 +38,15 @@ const DEFAULTS: PersistedUiState = {
   editable: true
 }
 
-export const LEFT_WIDTH_RANGE = [200, 500] as const
-export const RIGHT_WIDTH_RANGE = [320, 800] as const
+/**
+ * Panel geometry from DB Canvas Designer.dc.html. Widths are owned by
+ * UDashboardGroup, which persists them itself — the store only tracks
+ * open/collapsed so the navbar buttons can drive it.
+ */
+export const LEFT_WIDTH = { min: 200, max: 500, default: 280 } as const
+export const RIGHT_WIDTH = { min: 320, max: 800, default: 440 } as const
 export const RAIL_WIDTH = 56
+export const NAVBAR_HEIGHT = 52
 
 export const useUiStore = defineStore('ui', () => {
   const state = reactive<PersistedUiState>({ ...DEFAULTS })
@@ -131,14 +132,6 @@ export const useUiStore = defineStore('ui', () => {
     state.rightOpen = !state.rightOpen
   }
 
-  function setLeftWidth(px: number): void {
-    state.leftWidth = clamp(px, LEFT_WIDTH_RANGE[0], LEFT_WIDTH_RANGE[1])
-  }
-
-  function setRightWidth(px: number): void {
-    state.rightWidth = clamp(px, RIGHT_WIDTH_RANGE[0], RIGHT_WIDTH_RANGE[1])
-  }
-
   function setCodeTarget(target: ORMTarget): void {
     state.codeTarget = target
   }
@@ -192,8 +185,6 @@ export const useUiStore = defineStore('ui', () => {
     setRailTab,
     toggleLeft,
     toggleRight,
-    setLeftWidth,
-    setRightWidth,
     setCodeTarget,
     setEngine,
     toggleDisplay,
@@ -201,7 +192,3 @@ export const useUiStore = defineStore('ui', () => {
     hydrate
   }
 })
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value))
-}

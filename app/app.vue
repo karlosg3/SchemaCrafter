@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useUiStore } from '~/stores/ui'
+import { LEFT_WIDTH, RIGHT_WIDTH, useUiStore } from '~/stores/ui'
 import { useWorkspaceStore } from '~/stores/workspace'
 
 // ssr:false means this only ever runs in the browser, but hydration stays an
@@ -7,9 +7,15 @@ import { useWorkspaceStore } from '~/stores/workspace'
 const workspace = useWorkspaceStore()
 const ui = useUiStore()
 
+const toast = useToast()
+
 onMounted(() => {
   workspace.hydrate()
   ui.hydrate()
+
+  if (workspace.loadWarning) {
+    toast.add({ title: 'Could not restore your work', description: workspace.loadWarning, color: 'warning' })
+  }
 
   // Autosave is debounced, so a tab closing mid-window would lose the tail.
   document.addEventListener('visibilitychange', onVisibilityChange)
@@ -24,54 +30,75 @@ function onVisibilityChange() {
   if (document.visibilityState === 'hidden') workspace.flush()
 }
 
-const summary = computed(() =>
-  workspace.databases.map(db => ({
-    id: db.id,
-    name: db.name,
-    engine: db.engine,
-    schemas: workspace.schemasOfDatabase(db.id).length,
-    tables: workspace.tablesOfDatabase(db.id).length,
-    enums: workspace.enumsOfDatabase(db.id).length
-  }))
-)
+/**
+ * UDashboardSidebar models "collapsed"; the navbar buttons and the store speak
+ * "open". Bridging here keeps the store's vocabulary aligned with the UI.
+ */
+const leftCollapsed = computed({
+  get: () => !ui.state.leftOpen,
+  set: (value: boolean) => { ui.state.leftOpen = !value }
+})
+
+const rightCollapsed = computed({
+  get: () => !ui.state.rightOpen,
+  set: (value: boolean) => { ui.state.rightOpen = !value }
+})
 </script>
 
 <template>
   <UApp>
-    <!-- P2 scaffold: proves hydration, migration and the store wiring. The
-         real shell (navbar + two sidebars + canvas) lands in P3. -->
-    <div class="h-screen w-screen flex items-center justify-center bg-surface-root p-8">
-      <div class="sc-panel w-full max-w-2xl p-6">
-        <div class="flex items-baseline justify-between border-b border-line-chrome pb-3">
-          <h1 class="text-ink-bright font-semibold">
-            SchemaCrafter
-          </h1>
-          <span class="text-ink-dim text-xs font-mono">
-            loaded: {{ workspace.loadSource ?? '…' }}
-          </span>
-        </div>
+    <div class="h-screen w-screen flex flex-col overflow-hidden bg-surface-root">
+      <AppNavbar />
 
-        <p v-if="workspace.loadWarning" class="text-sync-pending text-xs mt-3">
-          {{ workspace.loadWarning }}
-        </p>
+      <!--
+        unit="px" so the prototype's pixel geometry applies directly.
+        UDashboardGroup owns panel sizing and persists it, which is what let the
+        two hand-rolled window-mousemove resize handlers go away.
+      -->
+      <UDashboardGroup
+        unit="px"
+        storage="local"
+        storage-key="schemacrafter_panels_v2"
+        class="flex-1 min-h-0"
+      >
+        <UDashboardSidebar
+          id="left"
+          v-model:collapsed="leftCollapsed"
+          side="left"
+          resizable
+          collapsible
+          :collapsed-size="0"
+          :min-size="LEFT_WIDTH.min"
+          :max-size="LEFT_WIDTH.max"
+          :default-size="LEFT_WIDTH.default"
+          :toggle="false"
+          :ui="{ root: 'bg-surface-chrome border-e-2 border-line-chrome' }"
+        >
+          <LeftSidebar />
+        </UDashboardSidebar>
 
-        <ul class="mt-4 space-y-2">
-          <li
-            v-for="db in summary"
-            :key="db.id"
-            class="flex items-center justify-between text-xs"
-          >
-            <span class="text-ink">{{ db.name }}</span>
-            <span class="text-ink-dim font-mono">
-              {{ db.engine }} · {{ db.schemas }} schemas · {{ db.tables }} tables · {{ db.enums }} enums
-            </span>
-          </li>
-        </ul>
+        <UDashboardPanel id="canvas">
+          <template #body>
+            <CanvasStage />
+          </template>
+        </UDashboardPanel>
 
-        <p class="text-ink-faint text-xs mt-4">
-          Active: {{ ui.activeDatabase?.name ?? 'none' }} · view {{ ui.state.viewLevel }}
-        </p>
-      </div>
+        <UDashboardSidebar
+          id="code"
+          v-model:collapsed="rightCollapsed"
+          side="right"
+          resizable
+          collapsible
+          :collapsed-size="0"
+          :min-size="RIGHT_WIDTH.min"
+          :max-size="RIGHT_WIDTH.max"
+          :default-size="RIGHT_WIDTH.default"
+          :toggle="false"
+          :ui="{ root: 'bg-surface-chrome border-s-2 border-line-chrome' }"
+        >
+          <RightSidebar />
+        </UDashboardSidebar>
+      </UDashboardGroup>
     </div>
   </UApp>
 </template>
