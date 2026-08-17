@@ -1,16 +1,51 @@
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
+import vue from '@vitejs/plugin-vue'
+import AutoImport from 'unplugin-auto-import/vite'
 
-// The domain layer under shared/ is pure TypeScript with no Vue or DOM
-// dependency, so these tests run in plain node without the Nuxt environment.
+const shared = fileURLToPath(new URL('./shared', import.meta.url))
+const app = fileURLToPath(new URL('./app', import.meta.url))
+
+const alias = {
+  '#shared': shared,
+  '~': app,
+  '@': app
+}
+
 export default defineConfig({
-  resolve: {
-    alias: {
-      '#shared': fileURLToPath(new URL('./shared', import.meta.url))
-    }
-  },
   test: {
-    environment: 'node',
-    include: ['test/**/*.test.ts']
+    projects: [
+      {
+        // The domain layer under shared/ is pure TypeScript with no Vue or DOM
+        // dependency, so it runs in plain node.
+        resolve: { alias },
+        test: {
+          name: 'domain',
+          environment: 'node',
+          include: [
+            'test/generators.snapshot.test.ts',
+            'test/roundtrip.test.ts',
+            'test/projection.test.ts',
+            'test/migration.test.ts'
+          ]
+        }
+      },
+      {
+        // Store tests need a DOM for localStorage plus Nuxt's Vue auto-imports.
+        plugins: [
+          vue(),
+          AutoImport({
+            imports: ['vue'],
+            dts: false
+          })
+        ],
+        resolve: { alias },
+        test: {
+          name: 'stores',
+          environment: 'happy-dom',
+          include: ['test/**/*.store.test.ts']
+        }
+      }
+    ]
   }
 })
