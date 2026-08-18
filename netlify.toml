@@ -1,0 +1,24 @@
+# Netlify build settings.
+#
+# Values here take precedence over the site's UI settings, so the old
+# npm + Vite configuration in the dashboard is superseded once this file lands
+# on the deploy branch. The package manager is not set here — Netlify picks
+# pnpm from pnpm-lock.yaml, and Corepack installs the exact version pinned in
+# package.json's "packageManager" field.
+
+[build]
+  # `generate`, not `build`: the app is a client-only canvas backed by
+  # localStorage (ssr: false), so there is nothing for a server to render and
+  # nothing to keep a function warm for.
+  command = "pnpm generate"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # Netlify sets NETLIFY=true, which Nitro already detects. Pinning the preset
+  # keeps a local `pnpm generate` producing byte-identical output to the deploy.
+  NITRO_PRESET = "netlify-static"
+
+# Nitro writes dist/_headers (immutable caching for hashed assets) and
+# dist/_redirects (unknown paths -> the prerendered 404) on every build, so
+# neither belongs in this file.
