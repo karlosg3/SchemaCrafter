@@ -7,6 +7,10 @@ export default defineNuxtConfig({
   // server data and no SEO surface, so SSR would only buy hydration mismatches.
   ssr: false,
 
+  devServer: {
+    host: process.env.TAURI_DEV_HOST || 'localhost'
+  },
+
   modules: [
     '@nuxt/ui',
     '@nuxt/eslint',
@@ -58,6 +62,11 @@ export default defineNuxtConfig({
    * token gets coloured. Deduping is what keeps them the same objects.
    */
   vite: {
+    clearScreen: false,
+    envPrefix: ['VITE_', 'TAURI_'],
+    server: {
+      strictPort: true
+    },
     resolve: {
       dedupe: [
         '@codemirror/state',
