@@ -78,7 +78,7 @@ function generateColumnDef(col: Column, isPg: boolean): string {
     def = isPg ? `integer('${col.name}')` : `int('${col.name}')`;
     if (col.isAutoIncrement) def += '.primaryKey()';
   } else if (col.type === 'VARCHAR') {
-    def = `varchar('${col.name}', { length: 255 })`;
+    def = `varchar('${col.name}', { length: ${col.length ?? 255} })`;
   } else if (col.type === 'TEXT') {
     def = `text('${col.name}')`;
   } else if (col.type === 'UUID') {
@@ -86,7 +86,7 @@ function generateColumnDef(col: Column, isPg: boolean): string {
   } else if (col.type === 'BOOLEAN') {
     def = `boolean('${col.name}')`;
   } else if (col.type === 'DECIMAL') {
-    def = `decimal('${col.name}', { precision: 10, scale: 2 })`;
+    def = `decimal('${col.name}', { precision: ${col.precision ?? 10}, scale: ${col.scale ?? 2} })`;
   } else if (col.type === 'TIMESTAMP') {
     def = `timestamp('${col.name}')`;
   } else {

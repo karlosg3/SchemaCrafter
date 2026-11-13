@@ -31,7 +31,10 @@ export default defineConfig({
             'test/importSql.test.ts',
             'test/codeDiff.test.ts',
             'test/projectFile.test.ts',
-            'test/parsers.fixes.test.ts'
+            'test/parsers.fixes.test.ts',
+            'test/layout.test.ts',
+            'test/exporters.test.ts',
+            'test/sqlDiff.test.ts'
           ]
         }
       },

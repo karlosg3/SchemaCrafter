@@ -202,6 +202,10 @@ export function parseSqlToProject(codeText: string, currentProject: DatabaseProj
       const matchedEnum = enumBySqlName.get(cleanEnumCandidate);
 
       const type: DataType = matchedEnum ? 'ENUM' : mapSqlTypeToDataType(rawTypeToken);
+      const paramMatch = /\(\s*(\d+)(?:\s*,\s*(\d+))?\s*\)/.exec(rawTypeToken);
+      const parsedLength = type === 'VARCHAR' && paramMatch?.[1] ? Number.parseInt(paramMatch[1], 10) : undefined;
+      const parsedPrecision = type === 'DECIMAL' && paramMatch?.[1] ? Number.parseInt(paramMatch[1], 10) : undefined;
+      const parsedScale = type === 'DECIMAL' && paramMatch?.[2] !== undefined ? Number.parseInt(paramMatch[2], 10) : undefined;
       const isPrimaryKey = /\bPRIMARY\s+KEY\b/i.test(restUpper);
       const isNullable = !/\bNOT\s+NULL\b/i.test(restUpper) && !isPrimaryKey;
       const isUnique = /\bUNIQUE\b/i.test(restUpper);
@@ -241,6 +245,9 @@ export function parseSqlToProject(codeText: string, currentProject: DatabaseProj
         id: `${tableName}-col-${colIndex++}`,
         name: colName,
         type,
+        ...(parsedLength !== undefined && parsedLength > 0 ? { length: parsedLength } : {}),
+        ...(parsedPrecision !== undefined && parsedPrecision > 0 ? { precision: parsedPrecision } : {}),
+        ...(parsedScale !== undefined && parsedScale >= 0 ? { scale: parsedScale } : {}),
         enumName: matchedEnum?.name,
         isPrimaryKey,
         isNullable: isPrimaryKey ? false : isNullable,

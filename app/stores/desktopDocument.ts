@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import type { Workspace } from '#shared/types/workspace'
 import { slugify } from '#shared/utils/ids'
 import {
   PROJECT_FILE_EXTENSION,
@@ -6,12 +7,18 @@ import {
   parseProjectFile,
   serializeProjectFile
 } from '#shared/utils/projectFile'
+import type { RecoveryDraftResult } from '~/desktop/session'
 import { useUiStore } from './ui'
 import { useWorkspaceStore } from './workspace'
 
 let desktopFilesPromise: Promise<typeof import('~/desktop/files')> | null = null
 function loadDesktopFiles() {
   return (desktopFilesPromise ??= import('~/desktop/files'))
+}
+
+let desktopSessionPromise: Promise<typeof import('~/desktop/session')> | null = null
+function loadDesktopSession() {
+  return (desktopSessionPromise ??= import('~/desktop/session'))
 }
 
 export interface DesktopFileOpResult {
@@ -48,6 +55,7 @@ export const useDesktopDocumentStore = defineStore('desktopDocument', () => {
 
   function syncSavedRevision(): void {
     savedRevision.value = workspaceStore.revision
+    workspaceStore.captureBaseline()
   }
 
   function resetToNew(): void {
@@ -55,15 +63,34 @@ export const useDesktopDocumentStore = defineStore('desktopDocument', () => {
     workspaceStore.hydrateDesktopEmpty()
     currentFilePath.value = null
     syncSavedRevision()
+    void loadDesktopSession().then(s => s.clearRecoveryDraft())
   }
 
-  async function openPath(path: string): Promise<DesktopFileOpResult> {
+  function loadTemplateWorkspace(next: Workspace): void {
+    uiStore.setHasUnappliedCode(false)
+    workspaceStore.loadExternalWorkspace(next)
+    currentFilePath.value = null
+    syncSavedRevision()
+    void loadDesktopSession().then(s => s.clearRecoveryDraft())
+  }
+
+  function restoreRecoveryDraft(recovery: RecoveryDraftResult): void {
+    uiStore.setHasUnappliedCode(false)
+    workspaceStore.loadExternalWorkspace(recovery.workspace)
+    currentFilePath.value = recovery.sourcePath
+    // Keep dirty so closing/saving treats recovered edits as unsaved until saved.
+    savedRevision.value = workspaceStore.revision - 1
+  }
+
+  async function openPath(path: string, options?: { viaRecent?: boolean }): Promise<DesktopFileOpResult> {
     if (isBusy.value) return { ok: false, cancelled: true }
 
     isBusy.value = true
     try {
-      const { readProjectFile } = await loadDesktopFiles()
-      const raw = await readProjectFile(path)
+      const files = await loadDesktopFiles()
+      const raw = options?.viaRecent && typeof files.readRecentProjectFile === 'function'
+        ? await files.readRecentProjectFile(path)
+        : await files.readProjectFile(path)
       const parsed = parseProjectFile(raw)
       if (!parsed.ok) {
         return { ok: false, error: parsed.error }
@@ -79,6 +106,7 @@ export const useDesktopDocumentStore = defineStore('desktopDocument', () => {
       } else {
         currentFilePath.value = path
         syncSavedRevision()
+        void loadDesktopSession().then(s => s.recordRecentFile(path))
       }
 
       return {
@@ -111,6 +139,10 @@ export const useDesktopDocumentStore = defineStore('desktopDocument', () => {
       await writeProjectFile(path, serializeProjectFile(workspaceStore.workspace))
       currentFilePath.value = path
       syncSavedRevision()
+      void loadDesktopSession().then(async (s) => {
+        await s.recordRecentFile(path)
+        await s.clearRecoveryDraft()
+      })
       return { ok: true, fileName: fileNameFromPath(path) }
     } catch (error) {
       return {
@@ -147,6 +179,8 @@ export const useDesktopDocumentStore = defineStore('desktopDocument', () => {
 
     syncSavedRevision,
     resetToNew,
+    loadTemplateWorkspace,
+    restoreRecoveryDraft,
     openPath,
     pickAndOpenFile,
     saveFile,

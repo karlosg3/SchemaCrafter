@@ -22,9 +22,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   edit: []
+  duplicate: []
   remove: []
   add: []
   rowClick: [row: BlockRow]
+  rowDuplicate: [row: BlockRow]
   rowRemove: [row: BlockRow]
   resizeEnd: [size: { width: number, height: number }]
   resetSize: []
@@ -87,7 +89,28 @@ function onResizeEnd(event: { params: { width: number, height: number } }) {
       >
         {{ data.name }}
       </span>
+      <UTooltip v-if="data.comment" :text="data.comment">
+        <UIcon name="i-ph-note" class="size-3.5 shrink-0 text-ink-faint" />
+      </UTooltip>
+      <span
+        v-if="data.indexCount"
+        class="shrink-0 rounded border border-emerald-400/35 bg-emerald-500/12 px-1.5 py-0.5 font-mono text-[9.5px] leading-none text-emerald-300 [.light_&]:text-emerald-700"
+        title="Composite indexes"
+      >
+        {{ data.indexCount }} idx
+      </span>
       <span class="flex items-center gap-0.5 shrink-0 invisible group-hover/header:visible group-focus-within/header:visible">
+        <UTooltip v-if="editable && data.kind === 'table'" text="Duplicate table">
+          <UButton
+            icon="i-ph-copy"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            :aria-label="`Duplicate ${data.name}`"
+            class="nodrag"
+            @click.stop="emit('duplicate')"
+          />
+        </UTooltip>
         <UTooltip v-if="editable && data.size" text="Reset card size">
           <UButton
             icon="i-ph-arrows-in-simple"
@@ -161,6 +184,10 @@ function onResizeEnd(event: { params: { width: number, height: number } }) {
           {{ row.label }}
         </span>
 
+        <UTooltip v-if="row.comment" :text="row.comment">
+          <UIcon name="i-ph-chat-text" class="size-3 shrink-0 text-ink-faint" />
+        </UTooltip>
+
         <span
           v-if="row.badge"
           class="shrink-0 rounded border font-mono text-[9.5px] px-1.5 py-0.5 leading-none"
@@ -168,6 +195,21 @@ function onResizeEnd(event: { params: { width: number, height: number } }) {
         >{{ row.badge }}</span>
 
         <span v-if="row.sub" class="shrink-0 text-[10px] font-mono text-ink-faint whitespace-nowrap">{{ row.sub }}</span>
+
+        <UTooltip
+          v-if="editable && row.action?.kind === 'edit' && row.action.target === 'column'"
+          text="Duplicate column"
+        >
+          <UButton
+            icon="i-ph-copy"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            :aria-label="`Duplicate ${row.label}`"
+            class="nodrag shrink-0 invisible group-hover/row:visible group-focus-within/row:visible"
+            @click.stop="emit('rowDuplicate', row)"
+          />
+        </UTooltip>
 
         <UTooltip
           v-if="editable && row.deletable !== undefined"

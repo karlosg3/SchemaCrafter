@@ -61,7 +61,16 @@ const close = (draft: ColumnDraft | null) => emit('close', draft)
 useModalDismiss(open, close, null)
 
 const isEnum = computed(() => local.value.type === 'ENUM')
+const isVarchar = computed(() => local.value.type === 'VARCHAR')
+const isDecimal = computed(() => local.value.type === 'DECIMAL')
 const canAutoIncrement = computed(() => COUNTER_TYPES.includes(local.value.type))
+const typePreview = computed(() => {
+  if (isVarchar.value && local.value.length) return `VARCHAR(${local.value.length})`
+  if (isDecimal.value && (local.value.precision !== undefined || local.value.scale !== undefined)) {
+    return `DECIMAL(${local.value.precision ?? 10},${local.value.scale ?? 2})`
+  }
+  return local.value.type
+})
 const normalizedName = computed(() => local.value.name.trim() ? slugify(local.value.name) : '')
 const showNormalizedHint = computed(() => !!normalizedName.value && normalizedName.value !== local.value.name)
 
@@ -89,6 +98,11 @@ watch(() => local.value.isPrimaryKey, (isPk) => {
 watch(() => local.value.type, (next, prev) => {
   if (syncingFromProps || next === prev) return
   if (!isEnum.value) local.value.enumName = undefined
+  if (!isVarchar.value) local.value.length = undefined
+  if (!isDecimal.value) {
+    local.value.precision = undefined
+    local.value.scale = undefined
+  }
   if (!canAutoIncrement.value) local.value.isAutoIncrement = false
   if (local.value.foreignKey) local.value.foreignKey.targetColumnId = ''
 })
@@ -122,11 +136,20 @@ function toggleFlag(key: 'isPrimaryKey' | 'isNullable' | 'isUnique' | 'isIndexed
   local.value[key] = !local.value[key]
 }
 
+function normalizePositiveInt(value: unknown, min = 1): number | undefined {
+  if (value === '' || value === null || value === undefined) return undefined
+  const num = typeof value === 'number' ? value : Number.parseInt(String(value), 10)
+  return Number.isInteger(num) && num >= min ? num : undefined
+}
+
 function submit() {
   if (!canSubmit.value) return
   const defaultValue = local.value.defaultValue?.trim()
   close({
     ...local.value,
+    length: isVarchar.value ? normalizePositiveInt(local.value.length, 1) : undefined,
+    precision: isDecimal.value ? normalizePositiveInt(local.value.precision, 1) : undefined,
+    scale: isDecimal.value ? normalizePositiveInt(local.value.scale, 0) : undefined,
     defaultValue: defaultValue || undefined,
     enumName: isEnum.value ? local.value.enumName : undefined,
     foreignKey: hasFk.value ? local.value.foreignKey : undefined
@@ -155,7 +178,7 @@ function submit() {
               class="inline-flex items-center rounded-md border px-2 py-0.5 font-mono text-[10.5px]"
               :class="badgeToneClass(local.type)"
             >
-              {{ local.type }}
+              {{ typePreview }}
             </span>
           </div>
 
@@ -184,6 +207,40 @@ function submit() {
 
             <UFormField v-else label="Default value">
               <UInput v-model="local.defaultValue" placeholder="Optional" class="w-full font-mono" />
+            </UFormField>
+          </div>
+
+          <UFormField v-if="isVarchar" label="Max length" hint="SQL default: 255">
+            <UInput
+              v-model.number="local.length"
+              type="number"
+              min="1"
+              max="65535"
+              placeholder="255"
+              class="w-full font-mono"
+            />
+          </UFormField>
+
+          <div v-if="isDecimal" class="grid grid-cols-2 gap-3">
+            <UFormField label="Precision" hint="Total digits (default 10)">
+              <UInput
+                v-model.number="local.precision"
+                type="number"
+                min="1"
+                max="65"
+                placeholder="10"
+                class="w-full font-mono"
+              />
+            </UFormField>
+            <UFormField label="Scale" hint="Decimal places (default 2)">
+              <UInput
+                v-model.number="local.scale"
+                type="number"
+                min="0"
+                max="30"
+                placeholder="2"
+                class="w-full font-mono"
+              />
             </UFormField>
           </div>
 

@@ -138,7 +138,7 @@ function mapSqlType(col: Column, engine: string): string {
     case 'BIGINT':
       return col.isAutoIncrement ? (engine === 'postgresql' ? 'BIGSERIAL' : 'BIGINT AUTO_INCREMENT') : 'BIGINT';
     case 'VARCHAR':
-      return 'VARCHAR(255)';
+      return `VARCHAR(${col.length ?? 255})`;
     case 'TEXT':
       return 'TEXT';
     case 'UUID':
@@ -146,7 +146,7 @@ function mapSqlType(col: Column, engine: string): string {
     case 'BOOLEAN':
       return engine === 'postgresql' ? 'BOOLEAN' : 'TINYINT(1)';
     case 'DECIMAL':
-      return 'NUMERIC(10, 2)';
+      return `NUMERIC(${col.precision ?? 10}, ${col.scale ?? 2})`;
     case 'FLOAT':
       return 'DOUBLE PRECISION';
     case 'TIMESTAMP':

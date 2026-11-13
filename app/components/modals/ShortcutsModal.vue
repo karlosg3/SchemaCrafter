@@ -6,6 +6,14 @@ const isDesktop = isDesktopApp()
 const SECTIONS = computed(() => {
   const sections = [
     {
+      title: 'Workspace & Navigation',
+      items: [
+        { keys: ['Ctrl', 'K'], label: 'Open Command Palette (jump, export, switch)' },
+        { keys: ['Ctrl', 'Z'], label: 'Undo workspace mutation' },
+        { keys: ['Ctrl', 'Shift', 'Z'], label: 'Redo workspace mutation' }
+      ]
+    },
+    {
       title: 'Canvas',
       items: [
         { keys: ['Ctrl', '0'], label: 'Reset zoom & fit view' },

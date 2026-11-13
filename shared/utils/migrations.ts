@@ -181,6 +181,9 @@ function isValidColumn(col: unknown): boolean {
   }
   if (col.isIndexed !== undefined && typeof col.isIndexed !== 'boolean') return false
   if (col.isAutoIncrement !== undefined && typeof col.isAutoIncrement !== 'boolean') return false
+  if (col.length !== undefined && (typeof col.length !== 'number' || !Number.isInteger(col.length) || col.length <= 0)) return false
+  if (col.precision !== undefined && (typeof col.precision !== 'number' || !Number.isInteger(col.precision) || col.precision <= 0)) return false
+  if (col.scale !== undefined && (typeof col.scale !== 'number' || !Number.isInteger(col.scale) || col.scale < 0)) return false
   if (col.enumName !== undefined && typeof col.enumName !== 'string') return false
   if (col.defaultValue !== undefined && typeof col.defaultValue !== 'string') return false
   if (col.comment !== undefined && typeof col.comment !== 'string') return false

@@ -3,12 +3,19 @@ import { VueFlow } from '@vue-flow/core'
 import type { Connection, VueFlowStore } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import type { BlockNodeData, BlockRow, GraphNode, StubNodeData } from '#shared/utils/graph'
-import { buildGraph, columnIdFromHandle } from '#shared/utils/graph'
+import { blockHeight, buildGraph, columnIdFromHandle } from '#shared/utils/graph'
+import type { AlignableNode, AlignmentMode } from '#shared/utils/layout'
+import { alignNodes } from '#shared/utils/layout'
 import { useUiStore } from '~/stores/ui'
 import { useWorkspaceStore } from '~/stores/workspace'
 
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/node-resizer/dist/style.css'
+import '@vue-flow/minimap/dist/style.css'
+
+const MiniMap = defineAsyncComponent(() =>
+  import('@vue-flow/minimap').then(m => m.MiniMap)
+)
 
 const ui = useUiStore()
 const workspace = useWorkspaceStore()
@@ -95,6 +102,43 @@ const isEmpty = computed(() => graph.value.nodes.length === 0)
 const nodeMap = computed(() => new Map(graph.value.nodes.map(n => [n.id, n])))
 const nodeById = (id: string): GraphNode | undefined => nodeMap.value.get(id)
 
+const selectedBlockNodes = computed(() => {
+  const result: Array<Extract<GraphNode, { type: 'block' }>> = []
+  for (const id of selectedNodeIds.value) {
+    const n = nodeById(id)
+    if (n?.type === 'block') result.push(n)
+  }
+  return result
+})
+
+const ALIGN_ACTIONS: { mode: AlignmentMode, label: string, icon: string, minCount?: number }[] = [
+  { mode: 'left', label: 'Align left', icon: 'i-ph-align-left' },
+  { mode: 'centerX', label: 'Align center vertically', icon: 'i-ph-align-center-horizontal' },
+  { mode: 'right', label: 'Align right', icon: 'i-ph-align-right' },
+  { mode: 'top', label: 'Align top', icon: 'i-ph-align-top' },
+  { mode: 'centerY', label: 'Align middle horizontally', icon: 'i-ph-align-center-vertical' },
+  { mode: 'bottom', label: 'Align bottom', icon: 'i-ph-align-bottom' },
+  { mode: 'distributeH', label: 'Distribute horizontally', icon: 'i-ph-arrows-horizontal', minCount: 3 },
+  { mode: 'distributeV', label: 'Distribute vertically', icon: 'i-ph-arrows-vertical', minCount: 3 }
+]
+
+function alignSelection(mode: AlignmentMode) {
+  if (selectedBlockNodes.value.length < 2) return
+  const items: AlignableNode[] = selectedBlockNodes.value.map(n => ({
+    id: n.id,
+    x: n.position.x,
+    y: n.position.y,
+    width: n.data.size?.width ?? n.data.width,
+    height: n.data.size?.height ?? blockHeight(n.data)
+  }))
+  const nextPositions = alignNodes(items, mode)
+  workspace.moveNodes(
+    selectedBlockNodes.value
+      .map(n => nextPositions[n.id] ? { kind: n.data.kind, id: n.id, position: nextPositions[n.id]! } : null)
+      .filter((u): u is NonNullable<typeof u> => u !== null)
+  )
+}
+
 // -------------------------------------------------------------------- camera
 
 /**
@@ -134,10 +178,23 @@ function isEditableTarget(target: EventTarget | null): boolean {
 function onWindowKeyDown(event: KeyboardEvent) {
   if (isEditableTarget(event.target)) return
 
-  if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key === '0') {
-    event.preventDefault()
-    fit()
-    return
+  const key = event.key.toLowerCase()
+  if ((event.ctrlKey || event.metaKey) && !event.altKey) {
+    if (key === 'z' && !event.shiftKey) {
+      event.preventDefault()
+      workspace.undo()
+      return
+    }
+    if ((key === 'z' && event.shiftKey) || (key === 'y' && !event.shiftKey)) {
+      event.preventDefault()
+      workspace.redo()
+      return
+    }
+    if (key === '0') {
+      event.preventDefault()
+      fit()
+      return
+    }
   }
 
   if ((event.key === 'Delete' || event.key === 'Backspace') && !event.ctrlKey && !event.metaKey && !event.altKey) {
@@ -204,15 +261,21 @@ watch(
  * Persisting all four node kinds rather than just tables is audit APP-2.
  */
 function onNodeDragStop({ nodes: dragged }: { nodes: { id: string, position: { x: number, y: number } }[] }) {
+  const updates: Array<{ kind: BlockNodeData['kind'], id: string, position: { x: number, y: number } }> = []
   for (const node of dragged) {
     const graphNode = nodeById(node.id)
     // Stubs are derived from their source row and have nothing to persist.
     if (!graphNode || graphNode.type !== 'block') continue
-    workspace.moveNode(graphNode.data.kind, node.id, {
-      x: Math.round(node.position.x),
-      y: Math.round(node.position.y)
+    updates.push({
+      kind: graphNode.data.kind,
+      id: node.id,
+      position: {
+        x: Math.round(node.position.x),
+        y: Math.round(node.position.y)
+      }
     })
   }
+  workspace.moveNodes(updates)
 }
 
 /** The React app dropped NodeResizer's dimensions on the floor (audit APP-3). */
@@ -296,6 +359,19 @@ function onRemove(id: string, data: BlockNodeData) {
   dialogs.remove(data.kind, id)
 }
 
+function onDuplicate(id: string, data: BlockNodeData) {
+  if (data.kind !== 'table') return
+  const copy = workspace.duplicateTable(id)
+  if (copy) ui.requestFocus(copy.id)
+}
+
+function onEdgeClick({ edge }: { edge: { id: string, source: string, sourceHandle?: string | null } }) {
+  if (!ui.state.editable || !edge.id.startsWith('fk-')) return
+  const columnId = columnIdFromHandle(edge.sourceHandle)
+  if (!columnId) return
+  dialogs.editRelation(edge.source, columnId)
+}
+
 async function onRowRemove(node: GraphNode, row: BlockRow) {
   if (node.type !== 'block') return
 
@@ -347,6 +423,8 @@ const emptyStateMeta = computed(() => {
     :edges="edges"
     :min-zoom="MIN_ZOOM"
     :max-zoom="MAX_ZOOM"
+    :snap-to-grid="ui.state.snapToGrid"
+    :snap-grid="[16, 16]"
     :nodes-draggable="ui.state.editable"
     :nodes-connectable="ui.state.editable"
     :elements-selectable="true"
@@ -355,6 +433,7 @@ const emptyStateMeta = computed(() => {
     @pane-ready="onPaneReady"
     @node-drag-stop="onNodeDragStop"
     @node-double-click="onNodeDoubleClick"
+    @edge-click="onEdgeClick"
     @node-mouse-enter="hoveredNodeId = $event.node.id"
     @node-mouse-leave="hoveredNodeId = hoveredNodeId === $event.node.id ? null : hoveredNodeId"
     @edge-mouse-enter="hoveredEdgeId = $event.edge.id"
@@ -371,9 +450,11 @@ const emptyStateMeta = computed(() => {
         :connected-row-ids="connectedRowIds"
         :validate-connection="isValidConnection"
         @edit="dialogs.edit(blockProps.data.kind, blockProps.id)"
+        @duplicate="onDuplicate(blockProps.id, blockProps.data)"
         @remove="onRemove(blockProps.id, blockProps.data)"
         @add="onAdd(blockProps.id, blockProps.data)"
         @row-click="row => onRowClick(nodeById(blockProps.id)!, row)"
+        @row-duplicate="row => workspace.duplicateColumn(blockProps.id, row.id)"
         @row-remove="row => onRowRemove(nodeById(blockProps.id)!, row)"
         @resize-end="size => onResizeEnd(nodeById(blockProps.id)!, size)"
         @reset-size="onResetSize(nodeById(blockProps.id)!)"
@@ -389,6 +470,40 @@ const emptyStateMeta = computed(() => {
     </template>
 
     <CanvasControls />
+
+    <MiniMap
+      v-if="ui.state.showMinimap && !isEmpty"
+      position="bottom-right"
+      pannable
+      zoomable
+      class="sc-minimap"
+    />
+
+    <!-- Multi-select alignment toolbar -->
+    <div
+      v-if="ui.state.editable && selectedBlockNodes.length >= 2"
+      class="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 sc-panel flex items-center gap-0.5 p-1"
+    >
+      <span class="px-2 text-[11px] font-mono text-ink-dim">
+        {{ selectedBlockNodes.length }} selected
+      </span>
+      <span class="w-px h-4 bg-line-panel mx-0.5" />
+      <UTooltip
+        v-for="act in ALIGN_ACTIONS"
+        :key="act.mode"
+        :text="act.label"
+      >
+        <UButton
+          :icon="act.icon"
+          color="neutral"
+          variant="ghost"
+          size="xs"
+          :aria-label="act.label"
+          :disabled="!!act.minCount && selectedBlockNodes.length < act.minCount"
+          @click="alignSelection(act.mode)"
+        />
+      </UTooltip>
+    </div>
 
     <div v-if="isEmpty" class="absolute inset-0 grid place-items-center pointer-events-none px-4">
       <div class="pointer-events-auto sc-panel max-w-sm w-full p-6 text-center space-y-4">

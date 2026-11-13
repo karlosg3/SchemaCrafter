@@ -10,6 +10,8 @@ import type { EntityDraft } from '~/components/modals/EntityModal.vue'
 import EnumModal from '~/components/modals/EnumModal.vue'
 import type { EnumDraft } from '~/components/modals/EnumModal.vue'
 import ImportSqlModal from '~/components/modals/ImportSqlModal.vue'
+import RelationModal from '~/components/modals/RelationModal.vue'
+import type { RelationModalResult } from '~/components/modals/RelationModal.vue'
 import { useUiStore } from '~/stores/ui'
 import { useWorkspaceStore } from '~/stores/workspace'
 
@@ -155,9 +157,11 @@ export function useEntityDialogs() {
         name: table.name,
         gradient: [...table.gradient],
         comment: table.comment ?? '',
-        schemaId: table.schemaId
+        schemaId: table.schemaId,
+        indexes: table.indexes ? table.indexes.map(i => ({ ...i, columnNames: [...i.columnNames] })) : []
       },
-      schemaOptions: schemaOptions(schema.dbId)
+      schemaOptions: schemaOptions(schema.dbId),
+      availableColumns: table.columns.map(c => c.name)
     }) as EntityDraft | null
     if (!draft) return
 
@@ -165,7 +169,8 @@ export function useEntityDialogs() {
       name: slugify(draft.name),
       gradient: draft.gradient,
       schemaId: draft.schemaId,
-      comment: draft.comment.trim() || undefined
+      comment: draft.comment.trim() || undefined,
+      indexes: draft.indexes?.length ? draft.indexes : undefined
     })
   }
 
@@ -257,6 +262,33 @@ export function useEntityDialogs() {
     return { ...rest, isIndexed: rest.isIndexed ?? false, isAutoIncrement: rest.isAutoIncrement ?? false }
   }
 
+  async function editRelation(tableId: string, columnId: string) {
+    const sourceTable = workspace.table(tableId)
+    const sourceCol = sourceTable?.columns.find(c => c.id === columnId)
+    const fk = sourceCol?.foreignKey
+    if (!sourceTable || !sourceCol || !fk) return
+
+    const targetTable = workspace.table(fk.targetTableId)
+    const targetCol = targetTable?.columns.find(c => c.id === fk.targetColumnId)
+
+    const result = await openModal(RelationModal, {
+      sourceLabel: `${sourceTable.name}.${sourceCol.name}`,
+      targetLabel: `${targetTable?.name ?? '?'}.${targetCol?.name ?? '?'}`,
+      onDelete: fk.onDelete,
+      onUpdate: fk.onUpdate
+    }) as RelationModalResult | null
+
+    if (!result) return
+    if (result.action === 'delete') {
+      workspace.unrelate(tableId, columnId)
+      return
+    }
+    workspace.updateRelation(tableId, columnId, {
+      onDelete: result.onDelete,
+      onUpdate: result.onUpdate
+    })
+  }
+
   // ---------------------------------------------------------------- import
 
   async function importSql(dbId: string) {
@@ -318,9 +350,9 @@ export function useEntityDialogs() {
   }
 
   function deleteMessage(kind: EntityKind, name: string): string {
-    if (kind === 'database') return `"${name}" and every schema, table and enum inside it will be removed. This cannot be undone.`
+    if (kind === 'database') return `"${name}" and every schema, table and enum inside it will be removed.`
     if (kind === 'schema') return `"${name}" will be removed. Any tables still in it move to the database's public schema.`
-    if (kind === 'table') return `"${name}" and every foreign key pointing at it will be removed. This cannot be undone.`
+    if (kind === 'table') return `"${name}" and every foreign key pointing at it will be removed.`
     return `"${name}" will be removed. Columns using it keep the type name but lose the enum.`
   }
 
@@ -344,6 +376,7 @@ export function useEntityDialogs() {
     createEnum,
     editEnum,
     editColumn,
+    editRelation,
     importSql,
     remove,
     removeColumn,

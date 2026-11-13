@@ -21,6 +21,8 @@ interface PersistedUiState {
   showEnums: boolean
   showTypes: boolean
   editable: boolean
+  snapToGrid: boolean
+  showMinimap: boolean
 }
 
 const DEFAULTS: PersistedUiState = {
@@ -31,11 +33,13 @@ const DEFAULTS: PersistedUiState = {
   leftOpen: true,
   rightOpen: true,
   codeTarget: 'prisma',
-  // The four toggles behind the canvas gear popover.
+  // The toggles behind the canvas gear popover.
   showRelations: true,
   showEnums: true,
   showTypes: true,
-  editable: true
+  editable: true,
+  snapToGrid: true,
+  showMinimap: true
 }
 
 /**
@@ -68,6 +72,9 @@ export const useUiStore = defineStore('ui', () => {
   /** Transient canvas focus request triggered from the sidebar or command palette. */
   const focusTargetId = ref<string | null>(null)
   const focusEpoch = ref(0)
+  const commandPaletteOpen = ref(false)
+  const migrationDiffOpen = ref(false)
+  const welcomeOpen = ref(false)
 
   const workspaceStore = useWorkspaceStore()
 
@@ -162,7 +169,9 @@ export const useUiStore = defineStore('ui', () => {
     if (activeDbId.value) workspaceStore.updateDatabase(activeDbId.value, { engine: next })
   }
 
-  function toggleDisplay(key: 'showRelations' | 'showEnums' | 'showTypes' | 'editable'): void {
+  function toggleDisplay(
+    key: 'showRelations' | 'showEnums' | 'showTypes' | 'editable' | 'snapToGrid' | 'showMinimap'
+  ): void {
     state[key] = !state[key]
   }
 
@@ -194,7 +203,9 @@ export const useUiStore = defineStore('ui', () => {
     showRelations: isBoolean,
     showEnums: isBoolean,
     showTypes: isBoolean,
-    editable: isBoolean
+    editable: isBoolean,
+    snapToGrid: isBoolean,
+    showMinimap: isBoolean
   }
 
   const UI_SAVE_DEBOUNCE_MS = 200
@@ -244,6 +255,9 @@ export const useUiStore = defineStore('ui', () => {
     hasUnappliedCode,
     focusTargetId,
     focusEpoch,
+    commandPaletteOpen,
+    migrationDiffOpen,
+    welcomeOpen,
 
     activeDbId,
     activeDatabase,

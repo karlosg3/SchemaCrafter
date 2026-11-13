@@ -52,6 +52,7 @@ const style = computed(() => {
       : STROKE[props.data?.kind ?? 'fk'],
     strokeWidth: highlighted ? baseWidth + 0.85 : baseWidth,
     opacity: dimmed ? 0.22 : 1,
+    cursor: props.data?.kind === 'fk' ? 'pointer' : undefined,
     transition: 'opacity 140ms ease, stroke-width 140ms ease, stroke 140ms ease'
   }
 })

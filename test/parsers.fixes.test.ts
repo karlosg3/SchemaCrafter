@@ -142,4 +142,55 @@ describe('Phase 1 parser & generator fixes', () => {
     expect(members.indexes![0]!.columnNames).toEqual(['org_id', 'tier'])
     expect(members.indexes![0]!.isUnique).toBe(true)
   })
+
+  it('round-trips VARCHAR(length) and DECIMAL(precision, scale) across SQL, Drizzle, Prisma and MikroORM', () => {
+    const project: DatabaseProject = {
+      ...EMPTY_PROJECT,
+      tables: [
+        {
+          id: 't-ledger',
+          name: 'ledger',
+          schemaId: 'schema-public',
+          position: { x: 0, y: 0 },
+          columns: [
+            { id: 'c-1', name: 'id', type: 'UUID', isPrimaryKey: true, isNullable: false, isUnique: true },
+            { id: 'c-2', name: 'code', type: 'VARCHAR', length: 32, isPrimaryKey: false, isNullable: false, isUnique: false },
+            { id: 'c-3', name: 'amount', type: 'DECIMAL', precision: 14, scale: 4, isPrimaryKey: false, isNullable: false, isUnique: false }
+          ]
+        }
+      ]
+    }
+
+    const sql = generateCodeForTarget(project, 'sql')
+    expect(sql).toContain('"code" VARCHAR(32) NOT NULL')
+    expect(sql).toContain('"amount" NUMERIC(14, 4) NOT NULL')
+    const parsedSql = parseCodeToProject(sql, 'sql', EMPTY_PROJECT)
+    expect(parsedSql.tables[0]!.columns[1]!.length).toBe(32)
+    expect(parsedSql.tables[0]!.columns[2]!.precision).toBe(14)
+    expect(parsedSql.tables[0]!.columns[2]!.scale).toBe(4)
+
+    const drizzle = generateCodeForTarget(project, 'drizzle')
+    expect(drizzle).toContain(`varchar('code', { length: 32 })`)
+    expect(drizzle).toContain(`decimal('amount', { precision: 14, scale: 4 })`)
+    const parsedDrizzle = parseCodeToProject(drizzle, 'drizzle', EMPTY_PROJECT)
+    expect(parsedDrizzle.tables[0]!.columns[1]!.length).toBe(32)
+    expect(parsedDrizzle.tables[0]!.columns[2]!.precision).toBe(14)
+    expect(parsedDrizzle.tables[0]!.columns[2]!.scale).toBe(4)
+
+    const prisma = generateCodeForTarget(project, 'prisma')
+    expect(prisma).toContain('@db.VarChar(32)')
+    expect(prisma).toContain('@db.Decimal(14, 4)')
+    const parsedPrisma = parseCodeToProject(prisma, 'prisma', EMPTY_PROJECT)
+    expect(parsedPrisma.tables[0]!.columns[1]!.length).toBe(32)
+    expect(parsedPrisma.tables[0]!.columns[2]!.precision).toBe(14)
+    expect(parsedPrisma.tables[0]!.columns[2]!.scale).toBe(4)
+
+    const mikro = generateCodeForTarget(project, 'mikroorm')
+    expect(mikro).toContain('length: 32')
+    expect(mikro).toContain('precision: 14, scale: 4')
+    const parsedMikro = parseCodeToProject(mikro, 'mikroorm', EMPTY_PROJECT)
+    expect(parsedMikro.tables[0]!.columns[1]!.length).toBe(32)
+    expect(parsedMikro.tables[0]!.columns[2]!.precision).toBe(14)
+    expect(parsedMikro.tables[0]!.columns[2]!.scale).toBe(4)
+  })
 })

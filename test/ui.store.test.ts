@@ -60,6 +60,17 @@ describe('hydration', () => {
     expect(ui.state.railTab).toBe('tables')
     expect(ui.state.codeTarget).toBe('prisma')
     expect(ui.state.editable).toBe(true)
+    expect(ui.state.snapToGrid).toBe(true)
+    expect(ui.state.showMinimap).toBe(true)
+  })
+
+  it('toggles canvas display preferences including snapToGrid and showMinimap', () => {
+    seeded()
+    const ui = useUiStore()
+    ui.toggleDisplay('snapToGrid')
+    ui.toggleDisplay('showMinimap')
+    expect(ui.state.snapToGrid).toBe(false)
+    expect(ui.state.showMinimap).toBe(false)
   })
 
   it('tracks transient focus requests', () => {

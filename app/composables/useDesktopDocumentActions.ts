@@ -76,10 +76,19 @@ export function useDesktopDocumentActions() {
     return reportOpenResult(await doc.pickAndOpenFile())
   }
 
-  async function openPath(path: string, options?: { skipDirtyCheck?: boolean }): Promise<boolean> {
+  async function openPath(path: string, options?: { skipDirtyCheck?: boolean, viaRecent?: boolean }): Promise<boolean> {
     if (doc.isBusy) return false
     if (!options?.skipDirtyCheck && !(await confirmDiscard('open another file'))) return false
-    return reportOpenResult(await doc.openPath(path))
+    return reportOpenResult(await doc.openPath(path, { viaRecent: options?.viaRecent }))
+  }
+
+  async function openRecentPath(path: string): Promise<boolean> {
+    const ok = await openPath(path, { viaRecent: true })
+    if (!ok && !doc.isBusy) {
+      const { removeRecentFile } = await import('~/desktop/session')
+      await removeRecentFile(path)
+    }
+    return ok
   }
 
   async function saveFile(): Promise<boolean> {
@@ -96,6 +105,7 @@ export function useDesktopDocumentActions() {
     newFile,
     openFile,
     openPath,
+    openRecentPath,
     saveFile,
     saveFileAs
   }

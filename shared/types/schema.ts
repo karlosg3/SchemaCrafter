@@ -42,6 +42,9 @@ export interface Column {
   id: string;
   name: string;
   type: DataType;
+  length?: number;
+  precision?: number;
+  scale?: number;
   enumName?: string;
   isPrimaryKey: boolean;
   isNullable: boolean;

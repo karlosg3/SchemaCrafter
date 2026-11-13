@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { WORKSPACE_KEY, migrateV1ToWorkspace } from '#shared/utils/migrations'
 import { serializeProjectFile } from '#shared/utils/projectFile'
+import { BLOG_TEMPLATE, PROJECT_TEMPLATES } from '#shared/utils/templates'
 import { useDesktopDocumentStore } from '~/stores/desktopDocument'
 import { useUiStore } from '~/stores/ui'
 import { useWorkspaceStore } from '~/stores/workspace'
@@ -159,5 +160,29 @@ describe('desktopDocument store', () => {
 
     ui.setHasUnappliedCode(false)
     expect(doc.isDirty).toBe(false)
+  })
+
+  it('loads starter templates including BLOG_TEMPLATE and restores crash recovery drafts as dirty', () => {
+    expect(PROJECT_TEMPLATES.map(t => t.id)).toEqual(['ecommerce', 'saas', 'blog'])
+
+    const workspace = useWorkspaceStore()
+    const doc = useDesktopDocumentStore()
+
+    workspace.hydrateDesktopEmpty()
+    doc.syncSavedRevision()
+
+    const tplWorkspace = migrateV1ToWorkspace([BLOG_TEMPLATE])
+    doc.loadTemplateWorkspace(tplWorkspace)
+    expect(doc.currentFilePath).toBeNull()
+    expect(doc.isDirty).toBe(false)
+    expect(workspace.databases[0]!.name).toBe('Blog & CMS')
+
+    doc.restoreRecoveryDraft({
+      savedAt: '2026-11-13T12:00:00Z',
+      sourcePath: '/tmp/recovered.schemacrafter',
+      workspace: tplWorkspace
+    })
+    expect(doc.currentFilePath).toBe('/tmp/recovered.schemacrafter')
+    expect(doc.isDirty).toBe(true)
   })
 })

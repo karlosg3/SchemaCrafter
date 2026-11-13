@@ -116,6 +116,12 @@ export function parseDrizzleToProject(codeText: string, currentProject: Database
 
       const matchedEnum = enumByVarName.get(fnName);
       const type: DataType = matchedEnum ? 'ENUM' : mapDrizzleTypeToDataType(fnName);
+      const lengthMatch = type === 'VARCHAR' ? /\blength\s*:\s*(\d+)/.exec(rightHand) : null;
+      const precMatch = type === 'DECIMAL' ? /\bprecision\s*:\s*(\d+)/.exec(rightHand) : null;
+      const scaleMatch = type === 'DECIMAL' ? /\bscale\s*:\s*(\d+)/.exec(rightHand) : null;
+      const parsedLength = lengthMatch?.[1] ? Number.parseInt(lengthMatch[1], 10) : undefined;
+      const parsedPrecision = precMatch?.[1] ? Number.parseInt(precMatch[1], 10) : undefined;
+      const parsedScale = scaleMatch?.[1] ? Number.parseInt(scaleMatch[1], 10) : undefined;
 
       const isPrimaryKey = rightHand.includes('.primaryKey(');
       const isNullable = !rightHand.includes('.notNull(') && !isPrimaryKey;
@@ -140,6 +146,9 @@ export function parseDrizzleToProject(codeText: string, currentProject: Database
         id: `${tableName}-col-${colIndex++}`,
         name: sqlColName,
         type,
+        ...(parsedLength !== undefined && parsedLength > 0 ? { length: parsedLength } : {}),
+        ...(parsedPrecision !== undefined && parsedPrecision > 0 ? { precision: parsedPrecision } : {}),
+        ...(parsedScale !== undefined && parsedScale >= 0 ? { scale: parsedScale } : {}),
         enumName: matchedEnum?.name,
         isPrimaryKey,
         isNullable: isPrimaryKey ? false : isNullable,

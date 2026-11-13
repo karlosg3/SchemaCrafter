@@ -2,8 +2,10 @@
 import { useVueFlow } from '@vue-flow/core'
 import type { ViewLevel } from '~/stores/ui'
 import { useUiStore } from '~/stores/ui'
+import { useWorkspaceStore } from '~/stores/workspace'
 
 const ui = useUiStore()
+const workspace = useWorkspaceStore()
 const { zoomIn, zoomOut, fitView, viewport } = useVueFlow()
 
 const LEVELS: { level: ViewLevel, label: string, icon: string }[] = [
@@ -16,6 +18,8 @@ const DISPLAY = [
   { key: 'showRelations', label: 'Show relations', icon: 'i-ph-git-branch' },
   { key: 'showEnums', label: 'Show enums', icon: 'i-ph-list-bullets' },
   { key: 'showTypes', label: 'Show types', icon: 'i-ph-tag' },
+  { key: 'snapToGrid', label: 'Snap to grid (16px)', icon: 'i-ph-grid-four' },
+  { key: 'showMinimap', label: 'Show minimap', icon: 'i-ph-map-trifold' },
   { key: 'editable', label: 'Editable', icon: 'i-ph-pencil-simple' }
 ] as const
 
@@ -23,6 +27,13 @@ const zoomPercent = computed(() => `${Math.round(viewport.value.zoom * 100)}%`)
 
 function onFitView() {
   fitView({ padding: 0.2, maxZoom: 1 })
+}
+
+async function onAutoLayout() {
+  if (!ui.activeSchemaId) return
+  workspace.autoLayout(ui.activeSchemaId)
+  await nextTick()
+  onFitView()
 }
 </script>
 
@@ -95,6 +106,39 @@ function onFitView() {
     <span class="w-px h-4 bg-line-panel mx-0.5" />
     <UTooltip text="Fit to screen (Ctrl+0)">
       <UButton icon="i-ph-corners-out" color="neutral" variant="ghost" size="xs" aria-label="Fit view" @click="onFitView()" />
+    </UTooltip>
+    <span class="w-px h-4 bg-line-panel mx-0.5" />
+    <UTooltip text="Undo (Ctrl+Z)">
+      <UButton
+        icon="i-ph-arrow-u-up-left"
+        color="neutral"
+        variant="ghost"
+        size="xs"
+        aria-label="Undo"
+        :disabled="!workspace.canUndo"
+        @click="workspace.undo()"
+      />
+    </UTooltip>
+    <UTooltip text="Redo (Ctrl+Shift+Z)">
+      <UButton
+        icon="i-ph-arrow-u-up-right"
+        color="neutral"
+        variant="ghost"
+        size="xs"
+        aria-label="Redo"
+        :disabled="!workspace.canRedo"
+        @click="workspace.redo()"
+      />
+    </UTooltip>
+    <UTooltip v-if="ui.state.viewLevel === 'tables' && ui.state.editable" text="Auto-arrange layout (DAG)">
+      <UButton
+        icon="i-ph-flow-arrow"
+        color="neutral"
+        variant="ghost"
+        size="xs"
+        aria-label="Auto-arrange layout"
+        @click="onAutoLayout()"
+      />
     </UTooltip>
   </div>
 

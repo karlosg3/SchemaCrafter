@@ -227,3 +227,126 @@ describe('persistence', () => {
     expect(raw.databases.map((d: { name: string }) => d.name)).toContain('Extra')
   })
 })
+
+describe('history (undo/redo)', () => {
+  it('reverts and reapplies table, column, and relationship mutations', () => {
+    const store = storeWithTemplates()
+    store.clearHistory()
+    expect(store.canUndo).toBe(false)
+    expect(store.canRedo).toBe(false)
+
+    const schemaId = store.tablesOfDatabase(store.databases[0]!.id)[0]!.schemaId
+    const t = store.createTable(schemaId, 'invoices', { x: 10, y: 20 })!
+    expect(store.canUndo).toBe(true)
+    expect(store.table(t.id)?.name).toBe('invoices')
+
+    const col = store.addColumn(t.id, { name: 'total_cents', type: 'INTEGER' })!
+    expect(store.table(t.id)?.columns.some(c => c.id === col.id)).toBe(true)
+
+    expect(store.undo()).toBe(true)
+    expect(store.table(t.id)?.columns.some(c => c.id === col.id)).toBe(false)
+    expect(store.canRedo).toBe(true)
+
+    expect(store.undo()).toBe(true)
+    expect(store.table(t.id)).toBeUndefined()
+    expect(store.canUndo).toBe(false)
+
+    expect(store.redo()).toBe(true)
+    expect(store.table(t.id)?.name).toBe('invoices')
+  })
+
+  it('pushes a single undo entry when deleting a schema creates a fallback public schema', () => {
+    const store = storeWithTemplates()
+    const db = store.createDatabase('SingleSchema')
+    const s = store.schemasOfDatabase(db.id)[0]!
+    store.createTable(s.id, 'items')
+    store.clearHistory()
+
+    store.deleteSchema(s.id)
+    expect(store.schemasOfDatabase(db.id)).toHaveLength(1)
+    expect(store.schemasOfDatabase(db.id)[0]!.id).not.toBe(s.id)
+    expect(store.tablesOfDatabase(db.id)).toHaveLength(1)
+
+    expect(store.undo()).toBe(true)
+    expect(store.schema(s.id)).toBeDefined()
+    expect(store.canUndo).toBe(false)
+  })
+
+  it('ignores no-op node moves and batches moveNodes into one undo frame', () => {
+    const store = storeWithTemplates()
+    store.clearHistory()
+
+    const before = { ...store.table('table-users')!.position }
+    store.moveNode('table', 'table-users', before)
+    expect(store.canUndo).toBe(false)
+
+    store.moveNodes([
+      { kind: 'table', id: 'table-users', position: { x: 300, y: 400 } },
+      { kind: 'table', id: 'table-orders', position: { x: 500, y: 600 } }
+    ])
+    expect(store.table('table-users')!.position).toEqual({ x: 300, y: 400 })
+    expect(store.table('table-orders')!.position).toEqual({ x: 500, y: 600 })
+
+    expect(store.undo()).toBe(true)
+    expect(store.table('table-users')!.position).toEqual(before)
+    expect(store.canUndo).toBe(false)
+  })
+
+  it('caps history at 50 entries and clears future on a new mutation', () => {
+    const store = storeWithTemplates()
+    store.clearHistory()
+
+    for (let i = 0; i < 60; i++) {
+      store.moveNode('table', 'table-users', { x: 100 + i, y: 100 })
+    }
+    let steps = 0
+    while (store.undo()) steps++
+    expect(steps).toBe(50)
+
+    const schemaId = store.tablesOfDatabase(store.databases[0]!.id)[0]!.schemaId
+    expect(store.canRedo).toBe(true)
+    store.createTable(schemaId, 'fresh')
+    expect(store.canRedo).toBe(false)
+  })
+})
+
+describe('duplication & relation updates', () => {
+  it('duplicates a table with remapped self-FKs and unique column/index ids', () => {
+    const store = storeWithTemplates()
+    const orig = store.table('table-users')!
+    const origPos = { ...orig.position }
+
+    const copy = store.duplicateTable(orig.id)!
+    expect(copy.id).not.toBe(orig.id)
+    expect(copy.name).toBe('users_copy')
+    expect(copy.position).toEqual({ x: origPos.x + 32, y: origPos.y + 32 })
+    expect(copy.columns.map(c => c.name)).toEqual(orig.columns.map(c => c.name))
+    expect(copy.columns[0]!.id).not.toBe(orig.columns[0]!.id)
+
+    expect(store.undo()).toBe(true)
+    expect(store.table(copy.id)).toBeUndefined()
+  })
+
+  it('duplicates a column after the original and strips primary key & auto increment', () => {
+    const store = storeWithTemplates()
+    const orig = store.table('table-users')!
+    const pk = orig.columns[0]!
+
+    const copy = store.duplicateColumn(orig.id, pk.id)!
+    expect(copy.name).toBe(`${pk.name}_copy`)
+    expect(copy.isPrimaryKey).toBe(false)
+    expect(copy.isAutoIncrement).toBe(false)
+    expect(store.table(orig.id)!.columns[1]!.id).toBe(copy.id)
+  })
+
+  it('updates onDelete / onUpdate actions on an existing relationship', () => {
+    const store = storeWithTemplates()
+    expect(store.updateRelation('table-orders', 'o-2', { onDelete: 'SET NULL', onUpdate: 'CASCADE' })).toBe(true)
+    const fk = store.table('table-orders')!.columns.find(c => c.id === 'o-2')!.foreignKey!
+    expect(fk.onDelete).toBe('SET NULL')
+    expect(fk.onUpdate).toBe('CASCADE')
+
+    expect(store.undo()).toBe(true)
+    expect(store.table('table-orders')!.columns.find(c => c.id === 'o-2')!.foreignKey!.onUpdate).toBeUndefined()
+  })
+})
