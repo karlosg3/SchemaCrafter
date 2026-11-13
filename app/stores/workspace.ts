@@ -41,6 +41,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   const loadWarning = ref<string | null>(null)
   const persistenceMode = ref<'local' | 'file'>('local')
   const revision = ref(0)
+  /** Incremented whenever the workspace root is replaced (hydrate/open/new). */
+  const resetEpoch = ref(0)
 
   // ---------------------------------------------------------------- lookups
 
@@ -96,6 +98,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     workspace.value = result.workspace
     loadSource.value = result.source
     loadWarning.value = result.warning ?? null
+    resetEpoch.value += 1
     hydrated.value = true
   }
 
@@ -106,6 +109,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     workspace.value = emptyWorkspace()
     loadSource.value = null
     loadWarning.value = null
+    resetEpoch.value += 1
     hydrated.value = true
   }
 
@@ -116,6 +120,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     workspace.value = reconcileWorkspace(next)
     loadSource.value = null
     loadWarning.value = null
+    resetEpoch.value += 1
     hydrated.value = true
   }
 
@@ -393,9 +398,17 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     const t = table(tableId)
     if (!t) return
 
-    const index = t.columns.findIndex(c => c.id === column.id)
-    if (index === -1) t.columns.push(column)
-    else t.columns[index] = column
+    // Exclude the column's own id so keeping the same name never turns it into `name_2`,
+    // while renaming onto an existing sibling column still de-duplicates safely.
+    const otherNames = t.columns.filter(c => c.id !== column.id).map(c => c.name)
+    const safeColumn: Column = {
+      ...column,
+      name: uniqueName(column.name, otherNames)
+    }
+
+    const index = t.columns.findIndex(c => c.id === safeColumn.id)
+    if (index === -1) t.columns.push(safeColumn)
+    else t.columns[index] = safeColumn
     scheduleSave()
   }
 
@@ -564,6 +577,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     loadWarning,
     persistenceMode,
     revision,
+    resetEpoch,
 
     databases,
     database,

@@ -76,7 +76,7 @@ const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ??
           <UIcon name="i-ph-database" class="size-4 text-white" />
         </span>
         <span class="font-semibold text-[13.5px] tracking-[0.2px] text-ink-bright truncate">
-          SchemaCraft
+          SchemaCrafter
         </span>
       </div>
 

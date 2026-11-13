@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { WORKSPACE_KEY, migrateV1ToWorkspace } from '#shared/utils/migrations'
 import { serializeProjectFile } from '#shared/utils/projectFile'
 import { useDesktopDocumentStore } from '~/stores/desktopDocument'
+import { useUiStore } from '~/stores/ui'
 import { useWorkspaceStore } from '~/stores/workspace'
 import { TEMPLATES } from './fixtures'
 
@@ -141,5 +142,22 @@ describe('desktopDocument store', () => {
     })
     expect(workspace.databases.map(d => d.name)).toEqual(['KeepMe'])
     expect(doc.isDirty).toBe(true)
+  })
+
+  it('marks document dirty when the code editor has unapplied changes', () => {
+    const workspace = useWorkspaceStore()
+    const ui = useUiStore()
+    const doc = useDesktopDocumentStore()
+
+    workspace.hydrateDesktopEmpty()
+    doc.syncSavedRevision()
+    expect(doc.isDirty).toBe(false)
+
+    ui.setHasUnappliedCode(true)
+    expect(doc.isDirty).toBe(true)
+    expect(doc.windowTitle).toBe('• Untitled — SchemaCrafter')
+
+    ui.setHasUnappliedCode(false)
+    expect(doc.isDirty).toBe(false)
   })
 })

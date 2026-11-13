@@ -1,4 +1,5 @@
 import type { Table, Column, DataType, DatabaseProject, EnumDefinition } from '../types/schema';
+import { createId } from '../utils/ids';
 
 export function parsePrismaToProject(codeText: string, currentProject: DatabaseProject): DatabaseProject {
   // 1. Parse `enum EnumName { val1 val2 ... }`
@@ -20,7 +21,7 @@ export function parsePrismaToProject(codeText: string, currentProject: DatabaseP
       .filter((l) => l && !l.startsWith('//'));
 
     enums.push({
-      id: `enum-${enumName.toLowerCase()}-${Date.now()}`,
+      id: createId(`enum-${enumName.toLowerCase()}`),
       name: enumName,
       values,
       position: { x: enumX, y: enumY }

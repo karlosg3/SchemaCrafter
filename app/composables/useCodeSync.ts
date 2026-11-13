@@ -64,6 +64,20 @@ export function useCodeSync() {
 
   const draft = ref(generated.value)
   const isDirty = ref(false)
+  let skipNextContextWatch = false
+
+  watch(isDirty, dirty => ui.setHasUnappliedCode(dirty), { immediate: true })
+  onScopeDispose(() => ui.setHasUnappliedCode(false))
+
+  // Reset code draft cleanly when an external workspace load/reset replaces state.
+  watch(() => workspace.resetEpoch, () => {
+    skipNextContextWatch = true
+    isDirty.value = false
+    draft.value = generated.value
+    queueMicrotask(() => {
+      skipNextContextWatch = false
+    })
+  })
 
   // The canvas is authoritative while the editor is clean. Once it is dirty the
   // user's text wins until they apply or discard it, so canvas edits made in
@@ -72,12 +86,51 @@ export function useCodeSync() {
     if (!isDirty.value) draft.value = next
   }, { immediate: true })
 
-  // Switching target or database is a context change, not an edit: re-render
-  // from the canvas rather than leaving Prisma text in a SQL editor.
-  watch([target, () => ui.activeDbId], () => {
+  // Switching target or database is a context change: confirm before discarding
+  // unapplied code edits so user work isn't wiped silently.
+  watch([target, () => ui.activeDbId], async ([nextTarget, nextDbId], [prevTarget, prevDbId]) => {
+    if (skipNextContextWatch) return
+    if (nextTarget === prevTarget && nextDbId === prevDbId) return
+
+    const prevDbExists = prevDbId ? !!workspace.database(prevDbId) : false
+    if (isDirty.value && prevDbExists) {
+      const confirmed = await confirm({
+        title: 'Discard unapplied changes?',
+        message: 'Switching database or ORM target will discard your unapplied edits in the Code panel.',
+        confirmLabel: 'Discard & switch'
+      })
+      if (!confirmed) {
+        skipNextContextWatch = true
+        if (prevDbId && nextDbId !== prevDbId) ui.selectDatabase(prevDbId)
+        if (nextTarget !== prevTarget) ui.setCodeTarget(prevTarget)
+        await nextTick()
+        skipNextContextWatch = false
+        return
+      }
+    }
+
     isDirty.value = false
     draft.value = generated.value
   })
+
+  async function requestTargetChange(nextTarget: ORMTarget): Promise<boolean> {
+    if (nextTarget === target.value) return true
+    if (isDirty.value) {
+      const confirmed = await confirm({
+        title: 'Discard unapplied changes?',
+        message: 'Switching ORM target will discard your unapplied edits in the Code panel.',
+        confirmLabel: 'Discard & switch'
+      })
+      if (!confirmed) return false
+    }
+    skipNextContextWatch = true
+    isDirty.value = false
+    ui.setCodeTarget(nextTarget)
+    draft.value = generated.value
+    await nextTick()
+    skipNextContextWatch = false
+    return true
+  }
 
   function setDraft(next: string): void {
     draft.value = next
@@ -191,6 +244,7 @@ export function useCodeSync() {
     setDraft,
     discard,
     apply,
+    requestTargetChange,
     isDirty: readonly(isDirty),
     status,
     problem,

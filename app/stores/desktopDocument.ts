@@ -37,7 +37,9 @@ export const useDesktopDocumentStore = defineStore('desktopDocument', () => {
   const savedRevision = ref(0)
   const isBusy = ref(false)
 
-  const isDirty = computed(() => workspaceStore.revision !== savedRevision.value)
+  const isDirty = computed(() =>
+    workspaceStore.revision !== savedRevision.value || uiStore.hasUnappliedCode
+  )
   const fileName = computed(() =>
     currentFilePath.value ? fileNameFromPath(currentFilePath.value) : 'Untitled'
   )
@@ -50,6 +52,7 @@ export const useDesktopDocumentStore = defineStore('desktopDocument', () => {
   }
 
   function resetToNew(): void {
+    uiStore.setHasUnappliedCode(false)
     workspaceStore.hydrateDesktopEmpty()
     currentFilePath.value = null
     syncSavedRevision()
@@ -66,6 +69,7 @@ export const useDesktopDocumentStore = defineStore('desktopDocument', () => {
         return { ok: false, error: parsed.error }
       }
 
+      uiStore.setHasUnappliedCode(false)
       workspaceStore.loadExternalWorkspace(parsed.workspace)
       if (parsed.migratedFromLegacy) {
         // Keep migrated legacy/single-project JSON exports dirty with no target path

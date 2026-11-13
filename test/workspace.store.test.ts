@@ -104,6 +104,19 @@ describe('columns', () => {
     const added = store.addColumn('table-users', { name: 'email' })
     expect(added!.name).toBe('email_2')
   })
+
+  it('prevents duplicate names on upsertColumn without renaming the column when unchanged', () => {
+    const store = storeWithTemplates()
+    const users = store.table('table-users')!
+    const emailCol = users.columns.find(c => c.name === 'email')!
+    const activeCol = users.columns.find(c => c.name === 'is_active')!
+
+    store.upsertColumn('table-users', { ...emailCol })
+    expect(store.table('table-users')!.columns.find(c => c.id === emailCol.id)!.name).toBe('email')
+
+    store.upsertColumn('table-users', { ...activeCol, name: 'email' })
+    expect(store.table('table-users')!.columns.find(c => c.id === activeCol.id)!.name).toBe('email_2')
+  })
 })
 
 describe('relationships', () => {

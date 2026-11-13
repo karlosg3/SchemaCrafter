@@ -25,6 +25,12 @@ useModalDismiss(open, close, null)
 const canSubmit = computed(() =>
   local.value.name.trim().length > 0 && local.value.values.some(v => v.trim().length > 0)
 )
+const normalizedEnumName = computed(() => {
+  const raw = local.value.name
+  if (!raw.trim()) return undefined
+  const next = raw.trim().replace(/\s+/g, '_')
+  return next !== raw ? `Saves as ${next}` : undefined
+})
 
 function addValue() {
   local.value.values.push('')
@@ -47,7 +53,7 @@ function submit() {
   <UModal v-model:open="open" :title="title" @after:leave="emit('after:leave')">
     <template #body>
       <form id="enum-form" class="space-y-4" @submit.prevent="submit">
-        <UFormField label="Enum name" required>
+        <UFormField label="Enum name" required :hint="normalizedEnumName">
           <UInput v-model="local.name" placeholder="e.g. OrderStatus" autofocus class="w-full font-mono" />
         </UFormField>
 

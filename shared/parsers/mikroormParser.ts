@@ -1,4 +1,5 @@
 import type { Table, Column, DataType, DatabaseProject, SchemaGroup, EnumDefinition } from '../types/schema';
+import { createId } from '../utils/ids';
 
 export function parseMikroOrmToProject(codeText: string, currentProject: DatabaseProject): DatabaseProject {
   const schemasMap = new Map<string, SchemaGroup>();
@@ -39,7 +40,7 @@ export function parseMikroOrmToProject(codeText: string, currentProject: Databas
     }
 
     enums.push({
-      id: `enum-${enumName.toLowerCase()}-${Date.now()}`,
+      id: createId(`enum-${enumName.toLowerCase()}`),
       name: enumName,
       values,
       position: { x: enumX, y: enumY }
@@ -77,7 +78,7 @@ export function parseMikroOrmToProject(codeText: string, currentProject: Databas
     if (schemaName) {
       if (!schemasMap.has(schemaName)) {
         const newSchema: SchemaGroup = {
-          id: `schema-${schemaName}-${Date.now()}`,
+          id: createId(`schema-${schemaName}`),
           name: schemaName,
           color: colors[colorIdx++ % colors.length]!
         };

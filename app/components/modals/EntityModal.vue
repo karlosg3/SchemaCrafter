@@ -2,6 +2,7 @@
 import type { DatabaseEngine } from '#shared/types/schema'
 import type { Gradient } from '#shared/types/workspace'
 import { GRADIENTS } from '#shared/types/workspace'
+import { slugify } from '#shared/utils/ids'
 
 /**
  * Databases, schemas and tables differ by two optional fields — the engine and
@@ -51,6 +52,13 @@ const close = (draft: EntityDraft | null) => emit('close', draft)
 useModalDismiss(open, close, null)
 
 const canSubmit = computed(() => local.value.name.trim().length > 0)
+const normalizedHint = computed(() => {
+  if (props.kind === 'database') return undefined
+  const raw = local.value.name
+  if (!raw.trim()) return undefined
+  const slug = slugify(raw)
+  return slug !== raw ? `Saves as ${slug}` : undefined
+})
 
 function submit() {
   if (!canSubmit.value) return
@@ -66,7 +74,11 @@ function isSelected(gradient: Gradient) {
   <UModal v-model:open="open" :title="title" @after:leave="emit('after:leave')">
     <template #body>
       <form id="entity-form" class="space-y-4" @submit.prevent="submit">
-        <UFormField :label="kind === 'database' ? 'Name' : `${kind === 'schema' ? 'Schema' : 'Table'} name`" required>
+        <UFormField
+          :label="kind === 'database' ? 'Name' : `${kind === 'schema' ? 'Schema' : 'Table'} name`"
+          required
+          :hint="normalizedHint"
+        >
           <UInput
             v-model="local.name"
             :placeholder="PLACEHOLDER[kind]"

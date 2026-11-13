@@ -118,7 +118,7 @@ function onResizeEnd(event: { params: { width: number, height: number } }) {
     </div>
 
     <!-- Rows -->
-    <div class="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
+    <div class="flex-1 min-h-0 overflow-y-auto scrollbar-thin nowheel">
       <div
         v-for="row in data.rows"
         :key="row.id"

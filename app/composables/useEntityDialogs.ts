@@ -222,12 +222,20 @@ export function useEntityDialogs() {
 
     const fkTables: FkTableOption[] = workspace
       .tablesOfDatabase(schema.dbId)
-      .filter(t => t.id !== tableId)
       .map(t => ({
         id: t.id,
-        name: t.name,
-        columns: t.columns.map(c => ({ id: c.id, name: c.name, type: c.type }))
+        name: t.id === tableId ? `${t.name} (this table)` : t.name,
+        columns: t.columns
+          .filter(c => !(t.id === tableId && c.id === existing?.id))
+          .map(c => ({
+            id: c.id,
+            name: c.name,
+            type: c.type,
+            isPrimaryKey: c.isPrimaryKey,
+            isUnique: c.isUnique
+          }))
       }))
+      .filter(t => t.columns.length > 0)
 
     const draft = await openModal(ColumnModal, {
       title: existing ? 'Edit column' : 'New column',
@@ -241,8 +249,6 @@ export function useEntityDialogs() {
 
     const next = { ...draft, name: slugify(draft.name) }
     if (existing) workspace.upsertColumn(tableId, { ...next, id: existing.id } satisfies Column)
-    // addColumn re-runs the name through uniqueName, which upsert deliberately
-    // does not — renaming a column to itself must not turn it into `name_2`.
     else workspace.addColumn(tableId, next)
   }
 

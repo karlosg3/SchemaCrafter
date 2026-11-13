@@ -63,6 +63,8 @@ function oneOf<T extends string>(allowed: readonly T[]) {
 export const useUiStore = defineStore('ui', () => {
   const state = reactive<PersistedUiState>({ ...DEFAULTS })
   const hydrated = ref(false)
+  /** Runtime-only flag reflecting unapplied edits in the RightSidebar code editor. */
+  const hasUnappliedCode = ref(false)
 
   const workspaceStore = useWorkspaceStore()
 
@@ -161,6 +163,10 @@ export const useUiStore = defineStore('ui', () => {
     state[key] = !state[key]
   }
 
+  function setHasUnappliedCode(dirty: boolean): void {
+    hasUnappliedCode.value = dirty
+  }
+
   // ------------------------------------------------------------ persistence
 
   /**
@@ -207,6 +213,7 @@ export const useUiStore = defineStore('ui', () => {
   return {
     state,
     hydrated,
+    hasUnappliedCode,
 
     activeDbId,
     activeDatabase,
@@ -225,6 +232,7 @@ export const useUiStore = defineStore('ui', () => {
     setCodeTarget,
     setEngine,
     toggleDisplay,
+    setHasUnappliedCode,
 
     hydrate
   }

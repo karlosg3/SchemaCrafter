@@ -14,6 +14,7 @@ const {
   setDraft,
   discard,
   apply,
+  requestTargetChange,
   isDirty,
   status,
   problem,
@@ -30,7 +31,7 @@ const engineModel = computed({
 
 const targetModel = computed({
   get: () => ui.state.codeTarget,
-  set: (value: ORMTarget) => ui.setCodeTarget(value)
+  set: (value: ORMTarget) => void requestTargetChange(value)
 })
 
 /** The footer dot: amber while editing, red when the code will not parse. */

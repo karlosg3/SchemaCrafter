@@ -36,6 +36,7 @@ export function generateMikroOrmSchema(project: DatabaseProject): string {
           const options: string[] = [];
           if (col.isNullable) options.push(`nullable: true`);
           if (col.foreignKey.onDelete) options.push(`onDelete: '${col.foreignKey.onDelete.toLowerCase()}'`);
+          if (col.foreignKey.onUpdate) options.push(`onUpdate: '${col.foreignKey.onUpdate.toLowerCase()}'`);
           if (options.length > 0) {
             decorator += `, { ${options.join(', ')} }`;
           }

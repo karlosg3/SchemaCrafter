@@ -1,12 +1,14 @@
 import { PROJECT_FILE_EXTENSION } from '#shared/utils/projectFile'
 import type { DesktopFileOpResult } from '~/stores/desktopDocument'
 import { useDesktopDocumentStore } from '~/stores/desktopDocument'
+import { useUiStore } from '~/stores/ui'
 
 /**
  * Coordinates desktop document actions with unsaved-change confirmations and toasts.
  */
 export function useDesktopDocumentActions() {
   const doc = useDesktopDocumentStore()
+  const ui = useUiStore()
   const confirm = useConfirm()
   const toast = useToast()
 
@@ -16,6 +18,16 @@ export function useDesktopDocumentActions() {
       title: 'Unsaved changes',
       message: `You have unsaved changes in "${doc.fileName}". Discard them and ${actionLabel}?`,
       confirmLabel: 'Discard'
+    })
+  }
+
+  async function confirmSaveWithoutUnappliedCode(): Promise<boolean> {
+    if (!ui.hasUnappliedCode) return true
+    return confirm({
+      title: 'Unapplied code changes',
+      message: 'You have unapplied edits in the Code editor that have not been applied to the canvas. Save the canvas without them?',
+      confirmLabel: 'Save canvas only',
+      color: 'primary'
     })
   }
 
@@ -71,10 +83,12 @@ export function useDesktopDocumentActions() {
   }
 
   async function saveFile(): Promise<boolean> {
+    if (doc.isBusy || !(await confirmSaveWithoutUnappliedCode())) return false
     return reportSaveResult(await doc.saveFile())
   }
 
   async function saveFileAs(): Promise<boolean> {
+    if (doc.isBusy || !(await confirmSaveWithoutUnappliedCode())) return false
     return reportSaveResult(await doc.saveFileAs())
   }
 

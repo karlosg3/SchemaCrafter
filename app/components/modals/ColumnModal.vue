@@ -1,19 +1,28 @@
 <script setup lang="ts">
 import type { Column, DataType, ForeignKeyAction } from '#shared/types/schema'
+import { slugify } from '#shared/utils/ids'
 
 export type ColumnDraft = Omit<Column, 'id'>
+
+export interface FkColumnOption {
+  id: string
+  name: string
+  type: DataType
+  isPrimaryKey: boolean
+  isUnique: boolean
+}
 
 export interface FkTableOption {
   id: string
   name: string
-  columns: { id: string, name: string, type: DataType }[]
+  columns: FkColumnOption[]
 }
 
 const props = defineProps<{
   title: string
   submitLabel: string
   draft: ColumnDraft
-  /** Tables in the same database, minus the one being edited. */
+  /** Candidate FK tables in the same database (including self for self-FKs). */
   tables: FkTableOption[]
   /** Enums in the column's own schema — names may repeat across schemas. */
   enums: { name: string, values: string[] }[]
@@ -34,10 +43,14 @@ const COUNTER_TYPES: DataType[] = ['INT', 'BIGINT']
 
 const local = ref<ColumnDraft>(clone(props.draft))
 const hasFk = ref(!!props.draft.foreignKey)
+let syncingFromProps = false
 
-watch(() => props.draft, (next) => {
+watch(() => props.draft, async (next) => {
+  syncingFromProps = true
   local.value = clone(next)
   hasFk.value = !!next.foreignKey
+  await nextTick()
+  syncingFromProps = false
 }, { deep: true })
 
 function clone(draft: ColumnDraft): ColumnDraft {
@@ -49,29 +62,32 @@ useModalDismiss(open, close, null)
 
 const isEnum = computed(() => local.value.type === 'ENUM')
 const canAutoIncrement = computed(() => COUNTER_TYPES.includes(local.value.type))
+const normalizedName = computed(() => local.value.name.trim() ? slugify(local.value.name) : '')
+const showNormalizedHint = computed(() => !!normalizedName.value && normalizedName.value !== local.value.name)
 
 const selectedEnum = computed(() => props.enums.find(e => e.name === local.value.enumName))
 
 const enumItems = computed(() => props.enums.map(e => ({ label: e.name, value: e.name })))
 const tableItems = computed(() => props.tables.map(t => ({ label: t.name, value: t.id })))
 
-/** A foreign key is only meaningful between columns of the same type. */
+/** Mirrors workspace.canRelate(): matching type + primary key or unique target column. */
 const targetColumnItems = computed(() => {
   const table = props.tables.find(t => t.id === local.value.foreignKey?.targetTableId)
   return (table?.columns ?? [])
-    .filter(c => c.type === local.value.type)
-    .map(c => ({ label: c.name, value: c.id }))
+    .filter(c => c.type === local.value.type && (c.isPrimaryKey || c.isUnique))
+    .map(c => ({ label: `${c.name} (${c.isPrimaryKey ? 'PK' : 'UQ'})`, value: c.id }))
 })
 
 // A primary key is implicitly non-null and already indexed; leaving the two
 // switches live would let the form describe a column the generators cannot emit.
 watch(() => local.value.isPrimaryKey, (isPk) => {
-  if (!isPk) return
+  if (syncingFromProps || !isPk) return
   local.value.isNullable = false
   local.value.isIndexed = false
 })
 
-watch(() => local.value.type, () => {
+watch(() => local.value.type, (next, prev) => {
+  if (syncingFromProps || next === prev) return
   if (!isEnum.value) local.value.enumName = undefined
   if (!canAutoIncrement.value) local.value.isAutoIncrement = false
   // The old target column's type no longer matches.
@@ -79,12 +95,14 @@ watch(() => local.value.type, () => {
 })
 
 watch(hasFk, (value) => {
+  if (syncingFromProps) return
   local.value.foreignKey = value
     ? { targetTableId: '', targetColumnId: '', onDelete: 'CASCADE', onUpdate: 'NO ACTION' }
     : undefined
 })
 
-watch(() => local.value.foreignKey?.targetTableId, () => {
+watch(() => local.value.foreignKey?.targetTableId, (next, prev) => {
+  if (syncingFromProps || next === prev) return
   if (local.value.foreignKey) local.value.foreignKey.targetColumnId = ''
 })
 
@@ -114,7 +132,11 @@ function submit() {
   <UModal v-model:open="open" :title="title" :ui="{ content: 'max-w-lg' }" @after:leave="emit('after:leave')">
     <template #body>
       <form id="column-form" class="space-y-4" @submit.prevent="submit">
-        <UFormField label="Column name" required>
+        <UFormField
+          label="Column name"
+          required
+          :hint="showNormalizedHint ? `Saves as ${normalizedName}` : undefined"
+        >
           <UInput v-model="local.name" placeholder="e.g. user_id" autofocus class="w-full font-mono" />
         </UFormField>
 
@@ -201,7 +223,7 @@ function submit() {
                 label="Column"
                 size="xs"
                 required
-                :hint="targetColumnItems.length === 0 ? `no ${local.type} column` : undefined"
+                :hint="targetColumnItems.length === 0 ? `No ${local.type} PK/unique column` : undefined"
               >
                 <USelect
                   v-model="local.foreignKey.targetColumnId"
