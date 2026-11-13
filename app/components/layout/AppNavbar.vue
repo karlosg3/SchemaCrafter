@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { generateCodeForTarget } from '#shared/generators/index'
 import { slugify } from '#shared/utils/ids'
+import { useDesktopDocumentStore } from '~/stores/desktopDocument'
 import { useUiStore } from '~/stores/ui'
 import { useWorkspaceStore } from '~/stores/workspace'
 
@@ -8,6 +9,20 @@ const ui = useUiStore()
 const workspace = useWorkspaceStore()
 const dialogs = useEntityDialogs()
 const toast = useToast()
+
+const isDesktop = isDesktopApp()
+const desktopDoc = isDesktop ? useDesktopDocumentStore() : null
+const desktopActions = isDesktop ? useDesktopDocumentActions() : null
+
+const fileItems = computed(() => {
+  if (!desktopActions) return []
+  return [[
+    { label: 'New Project', icon: 'i-ph-file-plus', onSelect: () => void desktopActions.newFile() },
+    { label: 'Open…', icon: 'i-ph-folder-open', onSelect: () => void desktopActions.openFile() },
+    { label: 'Save', icon: 'i-ph-floppy-disk', onSelect: () => void desktopActions.saveFile() },
+    { label: 'Save As…', icon: 'i-ph-floppy-disk-back', onSelect: () => void desktopActions.saveFileAs() }
+  ]]
+})
 
 const downloadItems = [[
   { label: 'Download SQL', icon: 'i-ph-file-sql', onSelect: () => download('sql') },
@@ -66,20 +81,57 @@ const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ??
       </div>
 
       <span class="hidden md:flex items-center gap-1.5 pl-2 text-ink-dim text-xs min-w-0">
+        <template v-if="desktopDoc">
+          <span class="text-line-panel">/</span>
+          <span class="truncate font-mono text-ink" :title="desktopDoc.currentFilePath ?? 'Unsaved workspace'">
+            {{ desktopDoc.fileName }}
+          </span>
+          <span
+            v-if="desktopDoc.isDirty"
+            class="size-1.5 rounded-full bg-sync-pending shrink-0"
+            title="Unsaved changes"
+            aria-label="Unsaved changes"
+          />
+        </template>
         <span class="text-line-panel">/</span>
         <span class="truncate">{{ activeName }}</span>
         <UBadge :label="engine" color="neutral" variant="subtle" size="sm" class="font-mono" />
       </span>
     </div>
 
-    <!-- Right: import, download, sidebar toggle -->
+    <!-- Right: desktop file actions, import, download, sidebar toggle -->
     <div class="flex items-center gap-2">
+      <template v-if="desktopDoc && desktopActions">
+        <UDropdownMenu :items="fileItems" :content="{ align: 'end' }">
+          <UButton
+            label="File"
+            icon="i-ph-folder-open"
+            trailing-icon="i-ph-caret-down"
+            color="neutral"
+            variant="outline"
+            size="sm"
+            :loading="desktopDoc.isBusy"
+          />
+        </UDropdownMenu>
+
+        <UButton
+          label="Save"
+          icon="i-ph-floppy-disk"
+          :color="desktopDoc.isDirty ? 'primary' : 'neutral'"
+          :variant="desktopDoc.isDirty ? 'soft' : 'outline'"
+          size="sm"
+          :loading="desktopDoc.isBusy"
+          @click="void desktopActions.saveFile()"
+        />
+      </template>
+
       <UButton
         label="Import SQL"
         icon="i-ph-upload-simple"
         color="neutral"
         variant="outline"
         size="sm"
+        :disabled="!ui.activeDbId"
         @click="onImport()"
       />
 
@@ -91,6 +143,7 @@ const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ??
           color="neutral"
           variant="outline"
           size="sm"
+          :disabled="!ui.activeDbId"
         />
       </UDropdownMenu>
 

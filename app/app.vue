@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useDesktopDocumentStore } from '~/stores/desktopDocument'
 import { LEFT_WIDTH, RIGHT_WIDTH, useUiStore } from '~/stores/ui'
 import { useWorkspaceStore } from '~/stores/workspace'
 
@@ -6,29 +7,110 @@ import { useWorkspaceStore } from '~/stores/workspace'
 // explicit action rather than a side effect of reading state.
 const workspace = useWorkspaceStore()
 const ui = useUiStore()
-
 const toast = useToast()
 
-onMounted(() => {
-  workspace.hydrate()
-  ui.hydrate()
+const isDesktop = isDesktopApp()
+const desktopDoc = isDesktop ? useDesktopDocumentStore() : null
+const desktopActions = isDesktop ? useDesktopDocumentActions() : null
 
-  if (workspace.loadWarning) {
-    toast.add({ title: 'Could not restore your work', description: workspace.loadWarning, color: 'warning' })
-  }
-
-  // Autosave is debounced, so a tab closing mid-window would lose the tail.
-  document.addEventListener('visibilitychange', onVisibilityChange)
-})
-
-onBeforeUnmount(() => {
-  document.removeEventListener('visibilitychange', onVisibilityChange)
-  workspace.flush()
-})
+let unlistenFileOpen: (() => void) | null = null
+let unlistenClose: (() => void) | null = null
+let closePromptOpen = false
 
 function onVisibilityChange() {
   if (document.visibilityState === 'hidden') workspace.flush()
 }
+
+function onDesktopKeyDown(event: KeyboardEvent) {
+  if (!desktopActions || !(event.ctrlKey || event.metaKey) || event.altKey) return
+  const key = event.key.toLowerCase()
+
+  if (key === 's') {
+    event.preventDefault()
+    void (event.shiftKey ? desktopActions.saveFileAs() : desktopActions.saveFile())
+  } else if (key === 'o' && !event.shiftKey) {
+    event.preventDefault()
+    void desktopActions.openFile()
+  } else if (key === 'n' && !event.shiftKey) {
+    event.preventDefault()
+    void desktopActions.newFile()
+  }
+}
+
+onMounted(async () => {
+  if (!desktopDoc || !desktopActions) {
+    workspace.hydrate()
+    ui.hydrate()
+
+    if (workspace.loadWarning) {
+      toast.add({ title: 'Could not restore your work', description: workspace.loadWarning, color: 'warning' })
+    }
+
+    // Autosave is debounced, so a tab closing mid-window would lose the tail.
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return
+  }
+
+  workspace.hydrateDesktopEmpty()
+  ui.hydrate()
+  desktopDoc.syncSavedRevision()
+
+  watch(
+    () => desktopDoc.windowTitle,
+    title => void setDesktopWindowTitle(title).catch(() => {}),
+    { immediate: true }
+  )
+
+  document.addEventListener('keydown', onDesktopKeyDown)
+
+  try {
+    const pendingPath = await takePendingOpenFile()
+    if (pendingPath) await desktopActions.openPath(pendingPath, { skipDirtyCheck: true })
+  } catch (error) {
+    console.error('Failed to check startup file argument:', error)
+  }
+
+  try {
+    unlistenFileOpen = await listenOpenFileRequests((paths) => {
+      if (paths[0]) void desktopActions.openPath(paths[0])
+    })
+  } catch (error) {
+    console.error('Failed to listen for file-opened events:', error)
+  }
+
+  try {
+    unlistenClose = await onDesktopCloseRequested(async (preventDefault) => {
+      if (!desktopDoc.isDirty) return
+      if (closePromptOpen) {
+        preventDefault()
+        return
+      }
+      closePromptOpen = true
+      try {
+        const discard = await confirmDesktopClose(
+          `You have unsaved changes in "${desktopDoc.fileName}". Close without saving?`
+        )
+        if (!discard) preventDefault()
+      } finally {
+        closePromptOpen = false
+      }
+    })
+  } catch (error) {
+    console.error('Failed to attach desktop close guard:', error)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (!desktopDoc) {
+    document.removeEventListener('visibilitychange', onVisibilityChange)
+    workspace.flush()
+    return
+  }
+
+  document.removeEventListener('keydown', onDesktopKeyDown)
+  unlistenFileOpen?.()
+  unlistenClose?.()
+})
 
 /**
  * UDashboardSidebar models "collapsed"; the navbar buttons and the store speak
