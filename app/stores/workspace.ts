@@ -39,6 +39,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   const hydrated = ref(false)
   const loadSource = ref<LoadSource | null>(null)
   const loadWarning = ref<string | null>(null)
+  const persistenceMode = ref<'local' | 'file'>('local')
+  const revision = ref(0)
 
   // ---------------------------------------------------------------- lookups
 
@@ -77,8 +79,19 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
   // ------------------------------------------------------------ persistence
 
+  let saveTimer: ReturnType<typeof setTimeout> | null = null
+
+  function clearSaveTimer(): void {
+    if (saveTimer !== null) {
+      clearTimeout(saveTimer)
+      saveTimer = null
+    }
+  }
+
   function hydrate(): void {
     if (hydrated.value) return
+    clearSaveTimer()
+    persistenceMode.value = 'local'
     const result = loadWorkspace()
     workspace.value = result.workspace
     loadSource.value = result.source
@@ -86,20 +99,36 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     hydrated.value = true
   }
 
-  let saveTimer: ReturnType<typeof setTimeout> | null = null
+  /** Initializes an empty file-backed workspace for the desktop app. */
+  function hydrateDesktopEmpty(): void {
+    clearSaveTimer()
+    persistenceMode.value = 'file'
+    workspace.value = emptyWorkspace()
+    loadSource.value = null
+    loadWarning.value = null
+    hydrated.value = true
+  }
+
+  /** Replaces the workspace from a file on disk without writing to localStorage. */
+  function loadExternalWorkspace(next: Workspace): void {
+    clearSaveTimer()
+    persistenceMode.value = 'file'
+    workspace.value = reconcileWorkspace(next)
+    loadSource.value = null
+    loadWarning.value = null
+    hydrated.value = true
+  }
 
   function flush(): void {
-    if (saveTimer !== null) {
-      clearTimeout(saveTimer)
-      saveTimer = null
-    }
-    if (hydrated.value) saveWorkspace(workspace.value)
+    clearSaveTimer()
+    if (hydrated.value && persistenceMode.value === 'local') saveWorkspace(workspace.value)
   }
 
   /** Debounced so dragging a node does not write on every animation frame. */
   function scheduleSave(): void {
-    if (!hydrated.value) return
-    if (saveTimer !== null) clearTimeout(saveTimer)
+    revision.value += 1
+    if (!hydrated.value || persistenceMode.value !== 'local') return
+    clearSaveTimer()
     saveTimer = setTimeout(() => {
       saveTimer = null
       saveWorkspace(workspace.value)
@@ -533,6 +562,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     hydrated,
     loadSource,
     loadWarning,
+    persistenceMode,
+    revision,
 
     databases,
     database,
@@ -548,6 +579,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     projectFor,
 
     hydrate,
+    hydrateDesktopEmpty,
+    loadExternalWorkspace,
     flush,
 
     createDatabase,
