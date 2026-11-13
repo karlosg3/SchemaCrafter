@@ -21,7 +21,7 @@ export const BLOCK = {
   rowHeight: 32,
   rowHeightEnum: 28,
   footerHeight: 34,
-  borderWidth: 2
+  borderWidth: 1
 } as const
 
 /** Grid fallback for entities that have never been dragged. Matches autoLayout. */

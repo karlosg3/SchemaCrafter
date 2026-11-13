@@ -57,9 +57,18 @@ describe('hydration', () => {
     ui.hydrate()
 
     expect(ui.state.viewLevel).toBe('tables')
-    expect(ui.state.railTab).toBe('databases')
+    expect(ui.state.railTab).toBe('tables')
     expect(ui.state.codeTarget).toBe('prisma')
     expect(ui.state.editable).toBe(true)
+  })
+
+  it('tracks transient focus requests', () => {
+    seeded()
+    const ui = useUiStore()
+    expect(ui.focusEpoch).toBe(0)
+    ui.requestFocus('tbl-users')
+    expect(ui.focusTargetId).toBe('tbl-users')
+    expect(ui.focusEpoch).toBe(1)
   })
 
   it('debounces writes on change and flushes immediately on demand', async () => {

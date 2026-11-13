@@ -66,20 +66,20 @@ const normalizedName = computed(() => local.value.name.trim() ? slugify(local.va
 const showNormalizedHint = computed(() => !!normalizedName.value && normalizedName.value !== local.value.name)
 
 const selectedEnum = computed(() => props.enums.find(e => e.name === local.value.enumName))
-
 const enumItems = computed(() => props.enums.map(e => ({ label: e.name, value: e.name })))
 const tableItems = computed(() => props.tables.map(t => ({ label: t.name, value: t.id })))
 
 /** Mirrors workspace.canRelate(): matching type + primary key or unique target column. */
+const targetTable = computed(() => props.tables.find(t => t.id === local.value.foreignKey?.targetTableId))
 const targetColumnItems = computed(() => {
-  const table = props.tables.find(t => t.id === local.value.foreignKey?.targetTableId)
-  return (table?.columns ?? [])
+  return (targetTable.value?.columns ?? [])
     .filter(c => c.type === local.value.type && (c.isPrimaryKey || c.isUnique))
     .map(c => ({ label: `${c.name} (${c.isPrimaryKey ? 'PK' : 'UQ'})`, value: c.id }))
 })
+const targetColumnName = computed(() =>
+  targetTable.value?.columns.find(c => c.id === local.value.foreignKey?.targetColumnId)?.name ?? ''
+)
 
-// A primary key is implicitly non-null and already indexed; leaving the two
-// switches live would let the form describe a column the generators cannot emit.
 watch(() => local.value.isPrimaryKey, (isPk) => {
   if (syncingFromProps || !isPk) return
   local.value.isNullable = false
@@ -90,7 +90,6 @@ watch(() => local.value.type, (next, prev) => {
   if (syncingFromProps || next === prev) return
   if (!isEnum.value) local.value.enumName = undefined
   if (!canAutoIncrement.value) local.value.isAutoIncrement = false
-  // The old target column's type no longer matches.
   if (local.value.foreignKey) local.value.foreignKey.targetColumnId = ''
 })
 
@@ -116,6 +115,13 @@ const canSubmit = computed(() => {
   return true
 })
 
+function toggleFlag(key: 'isPrimaryKey' | 'isNullable' | 'isUnique' | 'isIndexed' | 'isAutoIncrement') {
+  if (key === 'isNullable' && local.value.isPrimaryKey) return
+  if (key === 'isIndexed' && local.value.isPrimaryKey) return
+  if (key === 'isAutoIncrement' && !canAutoIncrement.value) return
+  local.value[key] = !local.value[key]
+}
+
 function submit() {
   if (!canSubmit.value) return
   const defaultValue = local.value.defaultValue?.trim()
@@ -129,87 +135,163 @@ function submit() {
 </script>
 
 <template>
-  <UModal v-model:open="open" :title="title" :ui="{ content: 'max-w-lg' }" @after:leave="emit('after:leave')">
+  <USlideover
+    v-model:open="open"
+    :title="title"
+    description="Configure column schema, constraints, and relations."
+    side="right"
+    :ui="{ content: 'max-w-md border-s border-line-chrome bg-surface-chrome' }"
+    @after:leave="emit('after:leave')"
+  >
     <template #body>
-      <form id="column-form" class="space-y-4" @submit.prevent="submit">
-        <UFormField
-          label="Column name"
-          required
-          :hint="showNormalizedHint ? `Saves as ${normalizedName}` : undefined"
-        >
-          <UInput v-model="local.name" placeholder="e.g. user_id" autofocus class="w-full font-mono" />
-        </UFormField>
+      <form id="column-form" class="space-y-5" @submit.prevent="submit">
+        <!-- Identity -->
+        <section class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-dim">
+              Identity
+            </h3>
+            <span
+              class="inline-flex items-center rounded-md border px-2 py-0.5 font-mono text-[10.5px]"
+              :class="badgeToneClass(local.type)"
+            >
+              {{ local.type }}
+            </span>
+          </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <UFormField label="Data type">
-            <USelect v-model="local.type" :items="TYPES" class="w-full font-mono" />
+          <UFormField
+            label="Column name"
+            required
+            :hint="showNormalizedHint ? `Saves as ${normalizedName}` : undefined"
+          >
+            <UInput v-model="local.name" placeholder="e.g. user_id" autofocus class="w-full font-mono" />
           </UFormField>
 
-          <UFormField v-if="isEnum" label="Enum" required>
+          <div class="grid grid-cols-2 gap-3">
+            <UFormField label="Data type">
+              <USelect v-model="local.type" :items="TYPES" class="w-full font-mono" />
+            </UFormField>
+
+            <UFormField v-if="isEnum" label="Enum" required>
+              <USelect
+                v-model="local.enumName"
+                :items="enumItems"
+                value-key="value"
+                placeholder="Pick an enum"
+                class="w-full font-mono"
+              />
+            </UFormField>
+
+            <UFormField v-else label="Default value">
+              <UInput v-model="local.defaultValue" placeholder="Optional" class="w-full font-mono" />
+            </UFormField>
+          </div>
+
+          <UFormField v-if="isEnum" label="Default value">
             <USelect
-              v-model="local.enumName"
-              :items="enumItems"
-              value-key="value"
-              placeholder="Pick an enum"
+              v-model="local.defaultValue"
+              :items="selectedEnum?.values ?? []"
+              placeholder="Optional"
               class="w-full font-mono"
             />
           </UFormField>
+        </section>
 
-          <UFormField v-else label="Default value">
-            <UInput v-model="local.defaultValue" placeholder="Optional" class="w-full font-mono" />
-          </UFormField>
-        </div>
+        <!-- Constraints -->
+        <section class="space-y-2.5 pt-2 border-t border-line-chrome">
+          <h3 class="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-dim">
+            Constraints
+          </h3>
+          <div class="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[11.5px] font-medium transition-colors"
+              :class="local.isPrimaryKey
+                ? 'border-amber-400/50 bg-amber-500/15 text-amber-300 [.light_&]:text-amber-700'
+                : 'border-line-panel bg-surface-raised text-ink-muted hover:text-ink-bright'"
+              :aria-pressed="local.isPrimaryKey"
+              @click="toggleFlag('isPrimaryKey')"
+            >
+              <UIcon name="i-ph-key" class="size-3.5" />
+              PK
+            </button>
 
-        <UFormField v-if="isEnum" label="Default value">
-          <USelect
-            v-model="local.defaultValue"
-            :items="selectedEnum?.values ?? []"
-            placeholder="Optional"
-            class="w-full font-mono"
-          />
-        </UFormField>
+            <button
+              type="button"
+              :disabled="local.isPrimaryKey"
+              class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[11.5px] font-medium transition-colors disabled:opacity-40"
+              :class="local.isNullable
+                ? 'border-accent-400/50 bg-accent-500/15 text-accent-300 [.light_&]:text-accent-700'
+                : 'border-line-panel bg-surface-raised text-ink-muted hover:text-ink-bright'"
+              :aria-pressed="local.isNullable"
+              @click="toggleFlag('isNullable')"
+            >
+              NULL
+            </button>
 
-        <UFormField label="Constraints">
-          <div class="grid grid-cols-2 gap-x-4 gap-y-1.5">
-            <label class="flex items-center justify-between gap-3 text-[12px] text-ink cursor-pointer">
-              Primary key
-              <USwitch v-model="local.isPrimaryKey" size="sm" />
-            </label>
-            <label class="flex items-center justify-between gap-3 text-[12px] text-ink cursor-pointer">
-              Nullable
-              <USwitch v-model="local.isNullable" size="sm" :disabled="local.isPrimaryKey" />
-            </label>
-            <label class="flex items-center justify-between gap-3 text-[12px] text-ink cursor-pointer">
-              Unique
-              <USwitch v-model="local.isUnique" size="sm" />
-            </label>
-            <label class="flex items-center justify-between gap-3 text-[12px] text-ink cursor-pointer">
-              Indexed
-              <USwitch v-model="local.isIndexed" size="sm" :disabled="local.isPrimaryKey" />
-            </label>
-            <!--
-              Both of these were `useState` with no setter in ColumnModal.tsx
-              (L29 and L36) — rendered, unchangeable, and silently saved at
-              their defaults. They are real fields now.
-            -->
-            <UTooltip text="Only integer columns can auto-increment" :disabled="canAutoIncrement">
-              <label class="flex items-center justify-between gap-3 text-[12px] text-ink cursor-pointer w-full">
-                Auto-increment
-                <USwitch v-model="local.isAutoIncrement" size="sm" :disabled="!canAutoIncrement" />
-              </label>
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[11.5px] font-medium transition-colors"
+              :class="local.isUnique
+                ? 'border-sky-400/50 bg-sky-500/15 text-sky-300 [.light_&]:text-sky-700'
+                : 'border-line-panel bg-surface-raised text-ink-muted hover:text-ink-bright'"
+              :aria-pressed="local.isUnique"
+              @click="toggleFlag('isUnique')"
+            >
+              UQ
+            </button>
+
+            <button
+              type="button"
+              :disabled="local.isPrimaryKey"
+              class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[11.5px] font-medium transition-colors disabled:opacity-40"
+              :class="local.isIndexed
+                ? 'border-emerald-400/50 bg-emerald-500/15 text-emerald-300 [.light_&]:text-emerald-700'
+                : 'border-line-panel bg-surface-raised text-ink-muted hover:text-ink-bright'"
+              :aria-pressed="local.isIndexed"
+              @click="toggleFlag('isIndexed')"
+            >
+              IDX
+            </button>
+
+            <UTooltip text="Only INT and BIGINT columns can auto-increment" :disabled="canAutoIncrement">
+              <button
+                type="button"
+                :disabled="!canAutoIncrement"
+                class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[11.5px] font-medium transition-colors disabled:opacity-40"
+                :class="local.isAutoIncrement
+                  ? 'border-violet-400/50 bg-violet-500/15 text-violet-300 [.light_&]:text-violet-700'
+                  : 'border-line-panel bg-surface-raised text-ink-muted hover:text-ink-bright'"
+                :aria-pressed="local.isAutoIncrement"
+                @click="toggleFlag('isAutoIncrement')"
+              >
+                AUTO
+              </button>
             </UTooltip>
           </div>
-        </UFormField>
+        </section>
 
-        <UFormField label="Foreign key">
-          <div class="space-y-3">
-            <label class="flex items-center justify-between gap-3 text-[12px] text-ink cursor-pointer">
-              References another table
-              <USwitch v-model="hasFk" size="sm" :disabled="tables.length === 0" />
-            </label>
+        <!-- Foreign Key -->
+        <section class="space-y-3 pt-2 border-t border-line-chrome">
+          <div class="flex items-center justify-between">
+            <h3 class="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-dim">
+              Foreign key
+            </h3>
+            <USwitch v-model="hasFk" size="sm" :disabled="tables.length === 0" aria-label="Toggle foreign key" />
+          </div>
 
-            <div v-if="hasFk && local.foreignKey" class="grid grid-cols-2 gap-3">
-              <UFormField label="Table" size="xs" required>
+          <div v-if="hasFk && local.foreignKey" class="rounded-lg border border-line-panel bg-surface-raised/70 p-3 space-y-3">
+            <p
+              v-if="targetTable && targetColumnName"
+              class="flex items-center gap-1.5 font-mono text-[11px] text-accent-400"
+            >
+              <span class="truncate">{{ normalizedName || local.name || 'column' }}</span>
+              <UIcon name="i-ph-arrow-right" class="size-3 shrink-0" />
+              <span class="truncate">{{ targetTable.name }}.{{ targetColumnName }}</span>
+            </p>
+
+            <div class="grid grid-cols-2 gap-3">
+              <UFormField label="Target table" size="xs" required>
                 <USelect
                   v-model="local.foreignKey.targetTableId"
                   :items="tableItems"
@@ -220,7 +302,7 @@ function submit() {
               </UFormField>
 
               <UFormField
-                label="Column"
+                label="Target column"
                 size="xs"
                 required
                 :hint="targetColumnItems.length === 0 ? `No ${local.type} PK/unique column` : undefined"
@@ -244,7 +326,10 @@ function submit() {
               </UFormField>
             </div>
           </div>
-        </UFormField>
+          <p v-else class="text-[11.5px] text-ink-faint">
+            {{ tables.length === 0 ? 'Create a table with a PK or unique column to reference.' : 'Optional reference to another column.' }}
+          </p>
+        </section>
       </form>
     </template>
 
@@ -254,5 +339,5 @@ function submit() {
         <UButton :label="submitLabel" type="submit" form="column-form" :disabled="!canSubmit" />
       </div>
     </template>
-  </UModal>
+  </USlideover>
 </template>

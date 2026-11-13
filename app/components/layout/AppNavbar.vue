@@ -9,10 +9,17 @@ const ui = useUiStore()
 const workspace = useWorkspaceStore()
 const dialogs = useEntityDialogs()
 const toast = useToast()
+const colorMode = useColorMode()
 
 const isDesktop = isDesktopApp()
 const desktopDoc = isDesktop ? useDesktopDocumentStore() : null
 const desktopActions = isDesktop ? useDesktopDocumentActions() : null
+const shortcutsOpen = ref(false)
+
+const isDark = computed(() => colorMode.value !== 'light')
+function toggleColorMode() {
+  colorMode.preference = isDark.value ? 'light' : 'dark'
+}
 
 const fileItems = computed(() => {
   if (!desktopActions) return []
@@ -54,9 +61,9 @@ const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ??
   <header
     data-navbar
     class="h-13 shrink-0 flex items-center justify-between px-3 gap-3
-           bg-surface-chrome border-b-2 border-line-chrome relative z-50"
+           bg-surface-chrome border-b border-line-chrome relative z-50"
   >
-    <!-- Left: sidebar toggle, logo, wordmark -->
+    <!-- Left: sidebar toggle, logo, wordmark, document chip -->
     <div class="flex items-center gap-2 min-w-0">
       <UButton
         :icon="ui.state.leftOpen ? 'i-ph-sidebar-simple-fill' : 'i-ph-sidebar-simple'"
@@ -70,8 +77,8 @@ const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ??
 
       <div class="flex items-center gap-2 min-w-0 pl-1">
         <span
-          class="size-6.5 shrink-0 grid place-items-center"
-          :style="{ background: 'linear-gradient(135deg, var(--color-accent-500), #1c2029)' }"
+          class="size-7 shrink-0 rounded-md grid place-items-center shadow-xs"
+          :style="{ background: 'linear-gradient(135deg, var(--color-accent-500), var(--color-accent-700))' }"
         >
           <UIcon name="i-ph-database" class="size-4 text-white" />
         </span>
@@ -82,25 +89,28 @@ const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ??
 
       <span class="hidden md:flex items-center gap-1.5 pl-2 text-ink-dim text-xs min-w-0">
         <template v-if="desktopDoc">
-          <span class="text-line-panel">/</span>
-          <span class="truncate font-mono text-ink" :title="desktopDoc.currentFilePath ?? 'Unsaved workspace'">
-            {{ desktopDoc.fileName }}
-          </span>
           <span
-            v-if="desktopDoc.isDirty"
-            class="size-1.5 rounded-full bg-sync-pending shrink-0"
-            title="Unsaved changes"
-            aria-label="Unsaved changes"
-          />
+            class="inline-flex items-center gap-1.5 rounded-md border border-line-panel bg-surface-raised/80 px-2 py-0.5 max-w-52"
+            :title="desktopDoc.currentFilePath ?? 'Unsaved workspace'"
+          >
+            <UIcon name="i-ph-file-code" class="size-3.5 text-ink-dim shrink-0" />
+            <span class="truncate font-mono text-[11.5px] text-ink">{{ desktopDoc.fileName }}</span>
+            <span
+              v-if="desktopDoc.isDirty"
+              class="size-1.5 rounded-full bg-sync-pending shrink-0"
+              title="Unsaved changes"
+              aria-label="Unsaved changes"
+            />
+          </span>
         </template>
         <span class="text-line-panel">/</span>
-        <span class="truncate">{{ activeName }}</span>
+        <span class="truncate text-ink-muted font-medium">{{ activeName }}</span>
         <UBadge :label="engine" color="neutral" variant="subtle" size="sm" class="font-mono" />
       </span>
     </div>
 
-    <!-- Right: desktop file actions, import, download, sidebar toggle -->
-    <div class="flex items-center gap-2">
+    <!-- Right: desktop file actions, import, download, theme/help, sidebar toggle -->
+    <div class="flex items-center gap-1.5">
       <template v-if="desktopDoc && desktopActions">
         <UDropdownMenu :items="fileItems" :content="{ align: 'end' }">
           <UButton
@@ -147,6 +157,30 @@ const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ??
         />
       </UDropdownMenu>
 
+      <span class="hidden sm:block w-px h-5 bg-line-chrome mx-0.5" />
+
+      <UTooltip :text="isDark ? 'Switch to light theme' : 'Switch to dark theme'">
+        <UButton
+          :icon="isDark ? 'i-ph-sun' : 'i-ph-moon'"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          :aria-label="isDark ? 'Switch to light theme' : 'Switch to dark theme'"
+          @click="toggleColorMode()"
+        />
+      </UTooltip>
+
+      <UTooltip text="Keyboard shortcuts">
+        <UButton
+          icon="i-ph-question"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          aria-label="Keyboard shortcuts"
+          @click="shortcutsOpen = true"
+        />
+      </UTooltip>
+
       <UButton
         :icon="ui.state.rightOpen ? 'i-ph-sidebar-simple-fill' : 'i-ph-sidebar-simple'"
         color="neutral"
@@ -158,5 +192,7 @@ const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ??
         @click="ui.toggleRight()"
       />
     </div>
+
+    <ShortcutsModal v-model:open="shortcutsOpen" />
   </header>
 </template>

@@ -27,7 +27,7 @@ const DEFAULTS: PersistedUiState = {
   activeDbId: null,
   activeSchemaId: null,
   viewLevel: 'tables',
-  railTab: 'databases',
+  railTab: 'tables',
   leftOpen: true,
   rightOpen: true,
   codeTarget: 'prisma',
@@ -65,6 +65,9 @@ export const useUiStore = defineStore('ui', () => {
   const hydrated = ref(false)
   /** Runtime-only flag reflecting unapplied edits in the RightSidebar code editor. */
   const hasUnappliedCode = ref(false)
+  /** Transient canvas focus request triggered from the sidebar or command palette. */
+  const focusTargetId = ref<string | null>(null)
+  const focusEpoch = ref(0)
 
   const workspaceStore = useWorkspaceStore()
 
@@ -167,6 +170,11 @@ export const useUiStore = defineStore('ui', () => {
     hasUnappliedCode.value = dirty
   }
 
+  function requestFocus(entityId: string): void {
+    focusTargetId.value = entityId
+    focusEpoch.value++
+  }
+
   // ------------------------------------------------------------ persistence
 
   /**
@@ -234,6 +242,8 @@ export const useUiStore = defineStore('ui', () => {
     state,
     hydrated,
     hasUnappliedCode,
+    focusTargetId,
+    focusEpoch,
 
     activeDbId,
     activeDatabase,
@@ -253,6 +263,7 @@ export const useUiStore = defineStore('ui', () => {
     setEngine,
     toggleDisplay,
     setHasUnappliedCode,
+    requestFocus,
 
     hydrate,
     flush

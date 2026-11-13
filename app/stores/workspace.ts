@@ -514,7 +514,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   }
 
   /** The React version never persisted NodeResizer dimensions (audit APP-3). */
-  function resizeNode(kind: NodeKind, id: string, size: WH): void {
+  function resizeNode(kind: NodeKind, id: string, size: WH | undefined): void {
     const entity = entityFor(kind, id)
     if (!entity) return
     entity.size = size

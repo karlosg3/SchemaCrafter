@@ -3,8 +3,6 @@ import { BaseEdge, getBezierPath } from '@vue-flow/core'
 import type { Position } from '@vue-flow/core'
 import type { RelationKind } from '#shared/utils/graph'
 
-// Vue Flow hands an edge component its whole descriptor; this one renders a
-// fragment, so the unused half would land as extraneous attrs on the <text>.
 defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
@@ -15,10 +13,15 @@ const props = defineProps<{
   targetY: number
   sourcePosition: Position
   targetPosition: Position
-  data?: { kind: RelationKind, label: string, width: number }
+  data?: {
+    kind: RelationKind
+    label: string
+    width: number
+    highlighted?: boolean
+    dimmed?: boolean
+  }
 }>()
 
-/** Stroke colours from DB Canvas Designer.dc.html, as tokens in main.css. */
 const STROKE: Record<RelationKind, string> = {
   fk: 'var(--color-rel-fk)',
   enum: 'var(--color-rel-enum)',
@@ -39,26 +42,35 @@ const d = computed(() => path.value[0])
 const labelX = computed(() => path.value[1])
 const labelY = computed(() => path.value[2])
 
-const style = computed(() => ({
-  stroke: STROKE[props.data?.kind ?? 'fk'],
-  strokeWidth: props.data?.width ?? 2
-}))
+const style = computed(() => {
+  const baseWidth = props.data?.width ?? 1.75
+  const highlighted = props.data?.highlighted
+  const dimmed = props.data?.dimmed
+  return {
+    stroke: highlighted && props.data?.kind === 'fk'
+      ? 'var(--color-accent-400)'
+      : STROKE[props.data?.kind ?? 'fk'],
+    strokeWidth: highlighted ? baseWidth + 0.85 : baseWidth,
+    opacity: dimmed ? 0.22 : 1,
+    transition: 'opacity 140ms ease, stroke-width 140ms ease, stroke 140ms ease'
+  }
+})
 </script>
 
 <template>
   <BaseEdge :id="id" :path="d" :style="style" />
 
-  <!--
-    paint-order:stroke draws the canvas-coloured halo behind the glyphs, which
-    is how the prototype keeps labels legible where they cross an edge.
-  -->
   <text
     v-if="data?.label"
     :x="labelX"
     :y="labelY"
-    class="fill-ink-muted font-mono text-[10px] pointer-events-none select-none"
+    class="font-mono text-[10px] pointer-events-none select-none transition-opacity"
+    :class="[
+      data.highlighted ? 'fill-ink-bright font-semibold' : 'fill-ink-muted',
+      data.dimmed ? 'opacity-25' : 'opacity-100'
+    ]"
     text-anchor="middle"
     dominant-baseline="middle"
-    style="paint-order: stroke; stroke: var(--color-surface-canvas); stroke-width: 5px"
+    style="paint-order: stroke; stroke: var(--color-surface-canvas); stroke-width: 6px; stroke-linejoin: round"
   >{{ data.label }}</text>
 </template>

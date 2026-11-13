@@ -178,7 +178,7 @@ const rightCollapsed = computed({
           :max-size="LEFT_WIDTH.max"
           :default-size="LEFT_WIDTH.default"
           :toggle="false"
-          :ui="{ root: 'bg-surface-chrome border-e-2 border-line-chrome' }"
+          :ui="{ root: 'bg-surface-chrome border-e border-line-chrome' }"
         >
           <LeftSidebar />
         </UDashboardSidebar>
@@ -200,7 +200,7 @@ const rightCollapsed = computed({
           :max-size="RIGHT_WIDTH.max"
           :default-size="RIGHT_WIDTH.default"
           :toggle="false"
-          :ui="{ root: 'bg-surface-chrome border-s-2 border-line-chrome' }"
+          :ui="{ root: 'bg-surface-chrome border-s border-line-chrome' }"
         >
           <RightSidebar />
         </UDashboardSidebar>

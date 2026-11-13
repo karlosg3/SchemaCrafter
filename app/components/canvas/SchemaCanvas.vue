@@ -62,23 +62,33 @@ const connectedRowIds = computed(() => {
   return ids
 })
 
-function isFkEdgeAnimated(edge: { id: string, source: string, target: string, data: { kind: string } }): boolean {
-  if (edge.data.kind !== 'fk') return false
+function isEdgeHighlighted(edge: { id: string, source: string, target: string }): boolean {
   if (hoveredEdgeId.value === edge.id) return true
   if (hoveredNodeId.value === edge.source || hoveredNodeId.value === edge.target) return true
   return selectedNodeIds.value.has(edge.source) || selectedNodeIds.value.has(edge.target)
 }
 
-const edges = computed(() => graph.value.edges.map(e => ({
-  id: e.id,
-  source: e.source,
-  target: e.target,
-  sourceHandle: e.sourceHandle,
-  targetHandle: e.targetHandle,
-  type: 'relation',
-  animated: isFkEdgeAnimated(e),
-  data: e.data
-})))
+const hasActiveFocus = computed(() =>
+  hoveredEdgeId.value !== null || hoveredNodeId.value !== null || selectedNodeIds.value.size > 0
+)
+
+const edges = computed(() => graph.value.edges.map((e) => {
+  const highlighted = isEdgeHighlighted(e)
+  return {
+    id: e.id,
+    source: e.source,
+    target: e.target,
+    sourceHandle: e.sourceHandle,
+    targetHandle: e.targetHandle,
+    type: 'relation',
+    animated: e.data.kind === 'fk' && highlighted,
+    data: {
+      ...e.data,
+      highlighted,
+      dimmed: hasActiveFocus.value && !highlighted
+    }
+  }
+}))
 
 const isEmpty = computed(() => graph.value.nodes.length === 0)
 
@@ -100,11 +110,44 @@ let flow: VueFlowStore | null = null
  * unconditionally would also yank the viewport every time a column is added.
  */
 let pendingFit = false
+let pendingFocusId: string | null = null
 let stopSelectionWatch: (() => void) | null = null
 
 function fit() {
   pendingFit = false
   flow?.fitView({ padding: 0.2, maxZoom: 1 })
+}
+
+function focusNode(id: string) {
+  if (!flow || !nodeById(id)) return false
+  flow.fitView({ nodes: [id], padding: 0.45, maxZoom: 1.05, duration: 260 })
+  return true
+}
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  const tag = target.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
+  return target.isContentEditable || !!target.closest('.cm-editor')
+}
+
+function onWindowKeyDown(event: KeyboardEvent) {
+  if (isEditableTarget(event.target)) return
+
+  if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key === '0') {
+    event.preventDefault()
+    fit()
+    return
+  }
+
+  if ((event.key === 'Delete' || event.key === 'Backspace') && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    if (!ui.state.editable || selectedNodeIds.value.size !== 1) return
+    const [selectedId] = Array.from(selectedNodeIds.value)
+    const node = selectedId ? nodeById(selectedId) : undefined
+    if (!node || node.type !== 'block' || !node.data.deletable) return
+    event.preventDefault()
+    dialogs.remove(node.data.kind, node.id)
+  }
 }
 
 function onPaneReady(instance: VueFlowStore) {
@@ -118,12 +161,22 @@ function onPaneReady(instance: VueFlowStore) {
     { immediate: true }
   )
   instance.onNodesInitialized(() => {
+    if (pendingFocusId && focusNode(pendingFocusId)) {
+      pendingFocusId = null
+      pendingFit = false
+      return
+    }
     if (pendingFit) fit()
   })
   fit()
 }
 
+onMounted(() => {
+  window.addEventListener('keydown', onWindowKeyDown)
+})
+
 onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onWindowKeyDown)
   stopSelectionWatch?.()
   stopSelectionWatch = null
 })
@@ -131,6 +184,17 @@ onBeforeUnmount(() => {
 watch(
   () => [ui.state.viewLevel, ui.activeDbId, ui.activeSchemaId].join('|'),
   () => { pendingFit = true }
+)
+
+watch(
+  () => ui.focusEpoch,
+  async () => {
+    const id = ui.focusTargetId
+    if (!id) return
+    pendingFocusId = id
+    await nextTick()
+    if (!pendingFit && focusNode(id)) pendingFocusId = null
+  }
 )
 
 // ------------------------------------------------------------------ geometry
@@ -155,6 +219,11 @@ function onNodeDragStop({ nodes: dragged }: { nodes: { id: string, position: { x
 function onResizeEnd(node: GraphNode, size: { width: number, height: number }) {
   if (node.type !== 'block') return
   workspace.resizeNode(node.data.kind, node.id, size)
+}
+
+function onResetSize(node: GraphNode) {
+  if (node.type !== 'block') return
+  workspace.resizeNode(node.data.kind, node.id, undefined)
 }
 
 // --------------------------------------------------------------- connections
@@ -240,6 +309,36 @@ async function onRowRemove(node: GraphNode, row: BlockRow) {
   if (!await confirm({ title: 'Remove value?', message: `"${row.label}" will be removed from ${entity.name}.` })) return
   workspace.updateEnum(node.id, { values: entity.values.filter(v => v !== row.label) })
 }
+const emptyStateMeta = computed(() => {
+  if (ui.state.viewLevel === 'databases') {
+    return {
+      icon: 'i-ph-database',
+      title: 'No databases in this workspace',
+      description: 'Create your first database to begin modeling schemas and tables.',
+      actionLabel: 'Create database',
+      onPrimary: () => dialogs.createDatabase(),
+      canImportSql: false
+    }
+  }
+  if (ui.state.viewLevel === 'schemas') {
+    return {
+      icon: 'i-ph-folders',
+      title: 'No schemas in this database',
+      description: 'Organize tables and enums under one or more schemas.',
+      actionLabel: 'Create schema',
+      onPrimary: () => ui.activeDbId && dialogs.createSchema(ui.activeDbId),
+      canImportSql: false
+    }
+  }
+  return {
+    icon: 'i-ph-table',
+    title: 'This schema is empty',
+    description: 'Add a table manually or import existing CREATE TABLE SQL statements.',
+    actionLabel: 'Create table',
+    onPrimary: () => ui.activeSchemaId && dialogs.createTable(ui.activeSchemaId),
+    canImportSql: !!ui.activeDbId
+  }
+})
 </script>
 
 <template>
@@ -262,7 +361,7 @@ async function onRowRemove(node: GraphNode, row: BlockRow) {
     @edge-mouse-leave="hoveredEdgeId = hoveredEdgeId === $event.edge.id ? null : hoveredEdgeId"
     @connect="onConnect"
   >
-    <Background :gap="22" :size="1" pattern-color="rgba(255,255,255,0.08)" />
+    <Background :gap="22" :size="1" pattern-color="var(--color-canvas-dot)" />
 
     <template #node-block="blockProps">
       <BlockNode
@@ -277,6 +376,7 @@ async function onRowRemove(node: GraphNode, row: BlockRow) {
         @row-click="row => onRowClick(nodeById(blockProps.id)!, row)"
         @row-remove="row => onRowRemove(nodeById(blockProps.id)!, row)"
         @resize-end="size => onResizeEnd(nodeById(blockProps.id)!, size)"
+        @reset-size="onResetSize(nodeById(blockProps.id)!)"
       />
     </template>
 
@@ -290,8 +390,38 @@ async function onRowRemove(node: GraphNode, row: BlockRow) {
 
     <CanvasControls />
 
-    <div v-if="isEmpty" class="absolute inset-0 grid place-items-center pointer-events-none">
-      <p class="text-ink-faint text-xs font-mono">Nothing here yet</p>
+    <div v-if="isEmpty" class="absolute inset-0 grid place-items-center pointer-events-none px-4">
+      <div class="pointer-events-auto sc-panel max-w-sm w-full p-6 text-center space-y-4">
+        <span class="mx-auto size-11 rounded-xl bg-accent-500/12 border border-accent-500/25 grid place-items-center text-accent-400">
+          <UIcon :name="emptyStateMeta.icon" class="size-5" />
+        </span>
+        <div class="space-y-1">
+          <h3 class="text-[14px] font-semibold text-ink-bright">
+            {{ emptyStateMeta.title }}
+          </h3>
+          <p class="text-[12px] text-ink-muted leading-relaxed">
+            {{ emptyStateMeta.description }}
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center justify-center gap-2">
+          <UButton
+            :label="emptyStateMeta.actionLabel"
+            icon="i-ph-plus"
+            size="sm"
+            :disabled="!ui.state.editable"
+            @click="emptyStateMeta.onPrimary()"
+          />
+          <UButton
+            v-if="emptyStateMeta.canImportSql"
+            label="Import SQL"
+            icon="i-ph-upload-simple"
+            color="neutral"
+            variant="outline"
+            size="sm"
+            @click="ui.activeDbId && dialogs.importSql(ui.activeDbId)"
+          />
+        </div>
+      </div>
     </div>
   </VueFlow>
 </template>
