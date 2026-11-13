@@ -40,23 +40,25 @@ export function isDesktopApp(): boolean {
 
 ### Tauri Desktop (`isDesktopApp()`)
 - **File-first workspace workflow:**
-  - **Open File (`Cmd/Ctrl + O`):** Native OS file picker (`open()` from `@tauri-apps/plugin-dialog`) filtered to `.schemacrafter.json` and `.json`. Reads file via `readTextFile()`, validates/normalizes it, and loads it into `useWorkspaceStore().replaceWorkspace(...)`.
+  - **Open File (`Cmd/Ctrl + O`):** Native OS file picker (`open()` from `@tauri-apps/plugin-dialog`) filtered to `.schemacrafter` and `.json`. Reads file via `readTextFile()`, validates/normalizes it, and loads it into `useWorkspaceStore().replaceWorkspace(...)`.
   - **Save (`Cmd/Ctrl + S`):** If `currentFilePath` is already set, writes directly with `writeTextFile(currentFilePath, json)`. Otherwise falls through to **Save As**.
-  - **Save As (`Cmd/Ctrl + Shift + S`):** Native OS save dialog (`save()` from `@tauri-apps/plugin-dialog`), updates `currentFilePath`, writes JSON, and clears the `isDirty` flag.
-  - **New Empty Workspace / Project (`Cmd/Ctrl + N`):** Starts from `emptyWorkspace()` (or a fresh database template) and clears `currentFilePath`.
-  - **Unsaved changes guard:** Before **New** or **Open** replaces a modified workspace (`isDirty === true`), prompt via the existing `useConfirm()` modal.
-- **Startup in Tauri:**
-  - Start either with an empty workspace (or welcome state with **New** / **Open File…** actions) instead of overwriting a file automatically, and do **not** treat `localStorage` as the primary document store when a file is open.
-  - Keep UI preferences (panel open/collapsed, theme, preferred ORM target) in `localStorage` or app state as today; keep schema data in the opened file.
+  - **Save As (`Cmd/Ctrl + Shift + S`):** Native OS save dialog (`save()` from `@tauri-apps/plugin-dialog`, defaulting to `.schemacrafter` while also allowing `.json`), updates `currentFilePath`, writes JSON, and clears the `isDirty` flag.
+  - **New Empty Workspace / Project (`Cmd/Ctrl + N`):** Starts from `emptyWorkspace()` and clears `currentFilePath`.
+  - **Unsaved changes guard:** Before **New**, **Open**, or closing the desktop window (`onCloseRequested`) replaces/discards a modified workspace (`isDirty === true`), prompt via `useConfirm()` (or native confirm on window close).
+- **Startup & Local Storage in Tauri:**
+  - Project/schema data (`Workspace`) lives in user-selected `.schemacrafter` / `.json` files on disk—not `localStorage`.
+  - UI preferences (`schemacrafter_ui_v2`) and panel widths (`schemacrafter_panels_v2`) continue using the Tauri webview's local `localStorage` seamlessly (`activeDbId` / `activeSchemaId` fall back cleanly to the opened project).
+  - On startup, if launched with a `.schemacrafter` / `.json` file path argument (e.g., double-clicking a file on Linux), the frontend pulls it via `take_pending_open_file` and opens it; otherwise it starts with a clean empty workspace ready for **New** / **Open**.
 
 ---
 
 ## 3. File Format & Compatibility
 
-Recommended extension: **`.schemacrafter.json`** (also accept `.json` when opening).
+- **Primary desktop extension:** **`.schemacrafter`** (JSON-formatted content under the hood, registered via `bundle.fileAssociations`).
+- **Interoperability extension:** **`.json`** (supported in both Open and Save As filters so files exported from the Web app work seamlessly).
 
 ### Canonical Saved Payload (`Workspace` v2)
-Store the normalized `Workspace` object from `shared/types/workspace.ts` (`formatVersion: 2`):
+Store the normalized `Workspace` object from `shared/types/workspace.ts` (`formatVersion: 2`) as pretty-printed JSON (`JSON.stringify(workspace, null, 2)`):
 
 ```json
 {
@@ -87,24 +89,27 @@ When opening a `.json` file, normalize accepted inputs in this order:
 Keep Tauri imports isolated from web-only persistence:
 
 - `app/utils/runtime.ts` — `isDesktopApp()` check.
-- `app/utils/desktopFiles.ts` — `pickOpenProjectFile()`, `pickSaveProjectFile()`, `readProjectFile(path)`, `writeProjectFile(path, workspace)` wrapping `@tauri-apps/plugin-dialog` and `@tauri-apps/plugin-fs` + JSON validation/migration.
-- `app/stores/desktopDocument.ts` (or a composable `app/composables/useDesktopFile.ts`) — holds `currentFilePath`, `fileName`, `isDirty`, and orchestrates `openFile()`, `saveFile()`, `saveFileAs()`, `newFile()`, plus `Cmd/Ctrl+S` and `Cmd/Ctrl+O` keybindings.
-- `app/components/layout/AppNavbar.vue` — when `isDesktopApp()` is true, display the open file name (with a dirty dot `•` if unsaved) and **Open** / **Save** / **Save As** actions alongside existing navbar controls.
-- `app/stores/workspace.ts` — ensure `markDirty()` / document-dirty notifications fire on mutations without breaking `localStorage` auto-save on the web (`if (!isDesktopApp()) saveWorkspace(...)`).
+- `app/utils/projectFile.ts` — pure serialization (`serializeWorkspaceFile`) and parsing/migration (`parseProjectFile`) supporting `Workspace` v2, legacy `DatabaseProject[]`, and single `DatabaseProject` exports.
+- `app/utils/desktopFiles.ts` — `pickOpenProjectFile()`, `pickSaveProjectFile()`, `readProjectFile()`, `writeProjectFile()`, `takePendingOpenFile()`, and `listenOpenFileRequests()` wrapping `@tauri-apps/plugin-dialog`, `@tauri-apps/plugin-fs`, and `@tauri-apps/api`.
+- `app/stores/desktopDocument.ts` — holds `currentFilePath`, `fileName`, `isDirty`, and orchestrates `openFile()`, `openPath()`, `saveFile()`, `saveFileAs()`, `newFile()`, and `markDirty()`.
+- `app/components/layout/AppNavbar.vue` — when `isDesktopApp()` is true, display the open file name (with an unsaved indicator) and a **File** menu (**New**, **Open…**, **Save**, **Save As…**) alongside existing navbar controls.
+- `app/app.vue` — conditionally hydrates `workspace` from `localStorage` only on Web (`!isDesktopApp()`), wires `Cmd/Ctrl+O`, `Cmd/Ctrl+S`, `Cmd/Ctrl+Shift+S`, `Cmd/Ctrl+N`, handles OS-opened file requests, and intercepts window close when `isDirty` is true.
+- `app/stores/workspace.ts` — on mutations, saves to `localStorage` when `!isDesktopApp()` and marks `desktopDocument` dirty when `isDesktopApp()`.
 
 ---
 
-## 5. Optional: Double-Clicking Project Files from the OS
+## 5. Double-Clicking `.schemacrafter` Files from the OS (Linux `.deb`)
 
-To allow users to open `.schemacrafter.json` files directly from Finder / Explorer / Linux file managers:
+To allow users to open `.schemacrafter` files directly from Linux file managers (GNOME Files, Dolphin, etc.) or pass a path via CLI (`schemacrafter path/to/file.schemacrafter`):
 
 1. **Declare file association in `src-tauri/tauri.conf.json`:**
    ```json
    {
      "bundle": {
+       "targets": ["deb"],
        "fileAssociations": [
          {
-           "ext": ["schemacrafter", "schemacrafter.json"],
+           "ext": ["schemacrafter"],
            "mimeType": "application/json",
            "name": "SchemaCrafter Project"
          }
@@ -112,9 +117,9 @@ To allow users to open `.schemacrafter.json` files directly from Finder / Explor
      }
    }
    ```
-2. **Forward OS open events in `src-tauri/src/lib.rs`:**
-   - Capture `tauri::RunEvent::Opened { urls }` in `.build(...).run(...)`.
-   - Convert file URLs to paths, allow them in the `fs` scope if needed, and emit `"file-opened"` to the frontend (`app_handle.emit("file-opened", paths)`).
-   - Also check `std::env::args()` on startup for Windows/Linux cold launches where a file path is passed as a CLI argument.
-3. **Listen on the frontend (`isDesktopApp()` only):**
-   - On mount, subscribe via `listen<string[]>('file-opened', ...)` from `@tauri-apps/api/event` and route the path through the same `openPath(path)` loader (honoring the unsaved-changes confirmation).
+2. **Capture CLI args & OS open events in `src-tauri/src/lib.rs`:**
+   - During `.setup()`, inspect `std::env::args().skip(1)` for an existing file path, allow it on `app.fs_scope()`, and store it in `PendingOpenFile(Mutex<Option<String>>)`.
+   - Expose `#[tauri::command] fn take_pending_open_file(...)` so the frontend fetches it after Nuxt mounts (avoiding startup event race conditions).
+   - Also listen for `tauri::RunEvent::Opened { urls }` (for macOS / future single-instance handling), grant `fs_scope`, and emit `"file-opened"` to the frontend.
+3. **Handle on the frontend (`isDesktopApp()` only):**
+   - After mount, call `takePendingOpenFile()` and subscribe to `"file-opened"` events, routing both through `desktopDocument.openPath(path)` (honoring the unsaved-changes confirmation).

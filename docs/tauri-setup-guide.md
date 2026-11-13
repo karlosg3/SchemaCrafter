@@ -60,22 +60,34 @@ pnpm tauri init
 Use these values when prompted:
 - **App name:** `SchemaCrafter`
 - **Window title:** `SchemaCrafter`
-- **Where are your web assets located?** `../dist`
+- **Where are your web assets located?** `../.output/public` (Nuxt `pnpm generate` writes the real static directory there, and creates `dist` as a symlink locally)
 - **URL of your dev server:** `http://localhost:3000`
 - **Frontend dev command:** `pnpm dev`
 - **Frontend build command:** `pnpm generate`
 
-Verify that `src-tauri/tauri.conf.json` has the `build` section configured like this:
+Verify that `src-tauri/tauri.conf.json` configures the Nuxt static build and targets Linux `.deb` for the initial release:
 
 ```json
 {
   "productName": "SchemaCrafter",
-  "identifier": "dev.schemacrafter.app",
+  "identifier": "com.karlosg3.schemacrafter",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "beforeBuildCommand": "pnpm generate",
     "devUrl": "http://localhost:3000",
-    "frontendDist": "../dist"
+    "frontendDist": "../.output/public"
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["deb"],
+    "fileAssociations": [
+      {
+        "ext": ["schemacrafter"],
+        "mimeType": "application/json",
+        "name": "SchemaCrafter Project",
+        "description": "SchemaCrafter database workspace file"
+      }
+    ]
   }
 }
 ```
@@ -186,7 +198,8 @@ pnpm test
 # 2. Desktop development window
 pnpm tauri dev
 
-# 3. Desktop release bundle
+# 3. Desktop Linux .deb release bundle
+# Outputs under src-tauri/target/release/bundle/deb/
 pnpm tauri build
 ```
 

@@ -10,14 +10,14 @@ This document outlines the plan for adding a **Tauri v2 desktop version** of Sch
 | --- | --- | --- |
 | **Account / Server** | None (no login, no backend) | None (100% local) |
 | **Persistence** | Browser `localStorage` auto-save (current behavior) | Native file-based **Open / Save / Save As** on disk |
-| **Distribution** | Static SPA deployed from `main` via `pnpm generate` → `dist/` | Native installers/binaries bundled from `dist/` + `src-tauri/` |
+| **Distribution** | Static SPA deployed from `main` via `pnpm generate` → `dist/` | Linux `.deb` package bundled from `dist/` + `src-tauri/` (first release) |
 | **Shared Code** | `app/` + `shared/` | Exact same `app/` + `shared/` |
 
 ### Why keep both in one repository?
 - `nuxt.config.ts` already runs with `ssr: false` and builds static assets into `dist/` via `pnpm generate`.
 - `shared/` (types, SQL/ORM generators, parsers, graph layout, migrations) has no browser or server coupling.
 - `app/utils/persistence.ts` isolates storage access, and `app/stores/workspace.ts` already exposes `replaceWorkspace(next)` and `hydrate()`.
-- Adding `src-tauri/` to this repo keeps one source of truth for UI, parsers, generators, and schema migrations while Netlify continues deploying the web build unaffected.
+- Adding `src-tauri/` to this repo keeps one source of truth for UI, parsers, generators, and schema migrations while Netlify continues deploying the web build (`dist/`) unaffected (`tauri.conf.json` reads `../.output/public` produced by `pnpm generate`).
 
 ---
 
@@ -31,7 +31,7 @@ flowchart TD
     Runtime -- "false (Web / Netlify)" --> WebStorage["app/utils/persistence.ts\nlocalStorage auto-save + Download JSON/SQL"]
     Runtime -- "true (Tauri Desktop)" --> DesktopFS["Desktop File Adapter\n@tauri-apps/plugin-dialog + @tauri-apps/plugin-fs"]
 
-    DesktopFS --> FileOps["Open / Save / Save As\n.schemacrafter.json / .json"]
+    DesktopFS --> FileOps["Open / Save / Save As\n.schemacrafter / .json"]
     DesktopFS --> RustCore["src-tauri/ (Tauri v2 Rust host + capabilities)"]
 ```
 
@@ -51,11 +51,13 @@ flowchart TD
    - Verify `pnpm generate`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm tauri dev`.
 
 2. **Phase 2 — Native File Open / Save** (see [tauri-file-persistence.md](./tauri-file-persistence.md))
-   - Add `isTauri()` detection in `app/utils/runtime.ts`.
-   - Implement `Open`, `Save`, `Save As`, and `New` project file workflows in Tauri using `@tauri-apps/plugin-dialog` and `@tauri-apps/plugin-fs`.
-   - Support opening both full `Workspace` v2 files and single `DatabaseProject` JSON files exported from the web **Download JSON** menu.
-   - Track `currentFilePath` and `isDirty` state in the desktop UI (title/indicator + unsaved-changes confirmation via `useConfirm`).
+   - Add `isDesktopApp()` detection in `app/utils/runtime.ts`.
+   - Implement pure JSON/project parsing & serialization in `app/utils/projectFile.ts`.
+   - Implement `Open`, `Save`, `Save As`, and `New` project file workflows in `app/utils/desktopFiles.ts` + `app/stores/desktopDocument.ts` using `@tauri-apps/plugin-dialog` and `@tauri-apps/plugin-fs`.
+   - Support `.schemacrafter` (default branded format, JSON inside) and `.json` (including single `DatabaseProject` JSON files exported from Web's **Download JSON** menu).
+   - Track `currentFilePath` and `isDirty` state in the desktop UI (title/badge + unsaved-changes confirmation via `useConfirm` and window close guard).
 
-3. **Phase 3 — OS Integration & Release Packaging (Optional)**
-   - Register `.schemacrafter` / `.schemacrafter.json` file associations in `src-tauri/tauri.conf.json` and handle `RunEvent::Opened` in `src-tauri/src/lib.rs`.
-   - Add GitHub Actions workflow (triggered on desktop release tags) to build `.dmg` / `.AppImage` / `.deb` / `.msi` installers without affecting Netlify web deploys.
+3. **Phase 3 — Linux `.deb` Packaging & File Associations**
+   - Set `"targets": ["deb"]` in `src-tauri/tauri.conf.json` for the first Linux `.deb` release.
+   - Register `.schemacrafter` file associations in `src-tauri/tauri.conf.json` and pass startup file paths from `std::env::args()` (plus `RunEvent::Opened`) into the frontend via `take_pending_open_file`.
+   - Build the `.deb` bundle locally (`pnpm tauri build`) or via GitHub Actions on release tags without affecting Netlify web deploys.
