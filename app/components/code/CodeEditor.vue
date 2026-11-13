@@ -42,7 +42,13 @@ const props = defineProps<{
   readonly?: boolean
 }>()
 
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+const emit = defineEmits<{
+  'update:modelValue': [value: string]
+  'update:lines': [lines: number]
+  dirty: []
+}>()
+
+const EMIT_DEBOUNCE_MS = 100
 
 const DIALECT = {
   postgresql: PostgreSQL,
@@ -52,6 +58,27 @@ const DIALECT = {
 
 const host = useTemplateRef<HTMLDivElement>('host')
 let view: EditorView | null = null
+let emitTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearEmitTimer() {
+  if (emitTimer !== null) {
+    clearTimeout(emitTimer)
+    emitTimer = null
+  }
+}
+
+function getValue(): string {
+  return view ? view.state.doc.toString() : props.modelValue
+}
+
+function flush(): string {
+  clearEmitTimer()
+  const value = getValue()
+  if (value !== props.modelValue) emit('update:modelValue', value)
+  return value
+}
+
+defineExpose({ getValue, flush })
 
 // Swapped in place on target/engine changes so the document, selection and
 // undo history survive; recreating the view would drop all three.
@@ -87,14 +114,24 @@ onMounted(() => {
         languageCompartment.of(languageExtension()),
         readonlyCompartment.of(EditorState.readOnly.of(!!props.readonly)),
         EditorView.updateListener.of((update) => {
-          if (update.docChanged) emit('update:modelValue', update.state.doc.toString())
+          if (!update.docChanged) return
+          emit('update:lines', update.state.doc.lines)
+          emit('dirty')
+          clearEmitTimer()
+          const nextDoc = update.state.doc
+          emitTimer = setTimeout(() => {
+            emitTimer = null
+            emit('update:modelValue', nextDoc.toString())
+          }, EMIT_DEBOUNCE_MS)
         })
       ]
     })
   })
+  if (view) emit('update:lines', view.state.doc.lines)
 })
 
 onBeforeUnmount(() => {
+  clearEmitTimer()
   view?.destroy()
   view = null
 })
@@ -102,8 +139,14 @@ onBeforeUnmount(() => {
 // Guarded: writing the value we just emitted back into the document would move
 // the caret to the end on every keystroke.
 watch(() => props.modelValue, (next) => {
-  if (!view || next === view.state.doc.toString()) return
+  if (!view) return
+  if (next === view.state.doc.toString()) {
+    emit('update:lines', view.state.doc.lines)
+    return
+  }
+  clearEmitTimer()
   view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: next } })
+  emit('update:lines', view.state.doc.lines)
 })
 
 watch([() => props.language, () => props.engine], () => {

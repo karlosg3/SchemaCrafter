@@ -1,9 +1,8 @@
-import { isTauri } from '@tauri-apps/api/core'
-
 /**
  * True only when running inside the Tauri desktop webview.
- * Web deployments (Netlify) and Vitest unit tests return false.
+ * Uses Tauri's global marker directly so Web builds never pull `@tauri-apps/*`
+ * into the entry chunk.
  */
 export function isDesktopApp(): boolean {
-  return typeof window !== 'undefined' && isTauri()
+  return typeof window !== 'undefined' && Boolean((globalThis as { isTauri?: unknown }).isTauri)
 }

@@ -30,7 +30,8 @@ export default defineConfig({
             'test/graph.test.ts',
             'test/importSql.test.ts',
             'test/codeDiff.test.ts',
-            'test/projectFile.test.ts'
+            'test/projectFile.test.ts',
+            'test/parsers.fixes.test.ts'
           ]
         }
       },

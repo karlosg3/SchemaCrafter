@@ -22,6 +22,8 @@ const props = defineProps<{
   selected?: boolean
   /** Resizing and the row/header tools are gated on the Editable toggle. */
   editable?: boolean
+  /** Column/row IDs that currently have active edges (keeps read-only handles intact). */
+  connectedRowIds?: Set<string>
   /**
    * REL-1, applied per handle rather than on <VueFlow>. The flow-level
    * `isValidConnection` is also run against every *declared* edge, so putting
@@ -128,10 +130,10 @@ function onResizeEnd(event: { params: { width: number, height: number } }) {
         @click="row.action && emit('rowClick', row)"
       >
         <!--
-          Every field is a handle, per refactor-plan.md:34. They sit on the row
-          rather than the block so a relation lands on the exact column.
+          Mount row handles whenever the canvas is editable (for dragging new links)
+          or when the column participates in an existing relation edge.
         -->
-        <template v-if="row.connectable">
+        <template v-if="row.connectable && (editable || connectedRowIds?.has(row.id))">
           <Handle
             :id="rowTargetHandle(row.id)"
             type="target"

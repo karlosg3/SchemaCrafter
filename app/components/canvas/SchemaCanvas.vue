@@ -47,6 +47,28 @@ const nodes = computed(() => graph.value.nodes.map(n => ({
   connectable: n.type === 'block' && ui.state.editable
 })))
 
+const hoveredNodeId = ref<string | null>(null)
+const hoveredEdgeId = ref<string | null>(null)
+const selectedNodeIds = ref<Set<string>>(new Set())
+
+const connectedRowIds = computed(() => {
+  const ids = new Set<string>()
+  for (const e of graph.value.edges) {
+    const sourceCol = columnIdFromHandle(e.sourceHandle)
+    if (sourceCol) ids.add(sourceCol)
+    const targetCol = columnIdFromHandle(e.targetHandle)
+    if (targetCol) ids.add(targetCol)
+  }
+  return ids
+})
+
+function isFkEdgeAnimated(edge: { id: string, source: string, target: string, data: { kind: string } }): boolean {
+  if (edge.data.kind !== 'fk') return false
+  if (hoveredEdgeId.value === edge.id) return true
+  if (hoveredNodeId.value === edge.source || hoveredNodeId.value === edge.target) return true
+  return selectedNodeIds.value.has(edge.source) || selectedNodeIds.value.has(edge.target)
+}
+
 const edges = computed(() => graph.value.edges.map(e => ({
   id: e.id,
   source: e.source,
@@ -54,13 +76,14 @@ const edges = computed(() => graph.value.edges.map(e => ({
   sourceHandle: e.sourceHandle,
   targetHandle: e.targetHandle,
   type: 'relation',
-  animated: e.data.kind === 'fk',
+  animated: isFkEdgeAnimated(e),
   data: e.data
 })))
 
 const isEmpty = computed(() => graph.value.nodes.length === 0)
 
-const nodeById = (id: string): GraphNode | undefined => graph.value.nodes.find(n => n.id === id)
+const nodeMap = computed(() => new Map(graph.value.nodes.map(n => [n.id, n])))
+const nodeById = (id: string): GraphNode | undefined => nodeMap.value.get(id)
 
 // -------------------------------------------------------------------- camera
 
@@ -77,6 +100,7 @@ let flow: VueFlowStore | null = null
  * unconditionally would also yank the viewport every time a column is added.
  */
 let pendingFit = false
+let stopSelectionWatch: (() => void) | null = null
 
 function fit() {
   pendingFit = false
@@ -85,11 +109,24 @@ function fit() {
 
 function onPaneReady(instance: VueFlowStore) {
   flow = instance
+  stopSelectionWatch?.()
+  stopSelectionWatch = watch(
+    instance.getSelectedNodes,
+    (selected) => {
+      selectedNodeIds.value = new Set(selected.map(n => n.id))
+    },
+    { immediate: true }
+  )
   instance.onNodesInitialized(() => {
     if (pendingFit) fit()
   })
   fit()
 }
+
+onBeforeUnmount(() => {
+  stopSelectionWatch?.()
+  stopSelectionWatch = null
+})
 
 watch(
   () => [ui.state.viewLevel, ui.activeDbId, ui.activeSchemaId].join('|'),
@@ -219,6 +256,10 @@ async function onRowRemove(node: GraphNode, row: BlockRow) {
     @pane-ready="onPaneReady"
     @node-drag-stop="onNodeDragStop"
     @node-double-click="onNodeDoubleClick"
+    @node-mouse-enter="hoveredNodeId = $event.node.id"
+    @node-mouse-leave="hoveredNodeId = hoveredNodeId === $event.node.id ? null : hoveredNodeId"
+    @edge-mouse-enter="hoveredEdgeId = $event.edge.id"
+    @edge-mouse-leave="hoveredEdgeId = hoveredEdgeId === $event.edge.id ? null : hoveredEdgeId"
     @connect="onConnect"
   >
     <Background :gap="22" :size="1" pattern-color="rgba(255,255,255,0.08)" />
@@ -228,6 +269,7 @@ async function onRowRemove(node: GraphNode, row: BlockRow) {
         :data="blockProps.data"
         :selected="blockProps.selected"
         :editable="ui.state.editable"
+        :connected-row-ids="connectedRowIds"
         :validate-connection="isValidConnection"
         @edit="dialogs.edit(blockProps.data.kind, blockProps.id)"
         @remove="onRemove(blockProps.id, blockProps.data)"

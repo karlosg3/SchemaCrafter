@@ -18,6 +18,10 @@ export default defineNuxtConfig({
     '@vueuse/nuxt'
   ],
 
+  ui: {
+    fonts: false
+  },
+
   css: ['~/assets/css/main.css'],
 
   // Directories under components/ are organisational only. Without this, a file
@@ -67,11 +71,16 @@ export default defineNuxtConfig({
     server: {
       strictPort: true
     },
+    worker: {
+      format: 'es'
+    },
     resolve: {
       dedupe: [
         '@codemirror/state',
         '@codemirror/view',
         '@codemirror/language',
+        '@codemirror/search',
+        '@codemirror/autocomplete',
         '@lezer/common',
         '@lezer/highlight'
       ]
@@ -81,12 +90,28 @@ export default defineNuxtConfig({
         '@codemirror/state',
         '@codemirror/view',
         '@codemirror/language',
+        '@codemirror/search',
+        '@codemirror/autocomplete',
         '@codemirror/commands',
         '@codemirror/lang-javascript',
         '@codemirror/lang-sql',
         '@lezer/common',
         '@lezer/highlight'
       ]
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('/node_modules/')) return
+            if (id.includes('/@codemirror/') || id.includes('/@lezer/')) return 'codemirror'
+            if (id.includes('/@vue-flow/')) return 'vue-flow'
+            if (id.includes('/@tauri-apps/')) return 'tauri'
+            if (id.includes('/@nuxt/ui/') || id.includes('/reka-ui/') || id.includes('/tailwind-variants/')) return 'ui-kit'
+            if (id.includes('/@vue/') || id.includes('/vue/') || id.includes('/pinia/')) return 'framework'
+          }
+        }
+      }
     }
   },
 

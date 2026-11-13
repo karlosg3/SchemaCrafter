@@ -189,6 +189,26 @@ export const useUiStore = defineStore('ui', () => {
     editable: isBoolean
   }
 
+  const UI_SAVE_DEBOUNCE_MS = 200
+  let saveTimer: ReturnType<typeof setTimeout> | null = null
+
+  function flush(): void {
+    if (saveTimer !== null) {
+      clearTimeout(saveTimer)
+      saveTimer = null
+    }
+    if (!hydrated.value) return
+    saveUiState({ ...state })
+  }
+
+  function scheduleSave(snapshot: PersistedUiState): void {
+    if (saveTimer !== null) clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => {
+      saveTimer = null
+      saveUiState(snapshot)
+    }, UI_SAVE_DEBOUNCE_MS)
+  }
+
   function hydrate(): void {
     if (hydrated.value) return
     const saved = loadUiState<PersistedUiState>()
@@ -205,7 +225,7 @@ export const useUiStore = defineStore('ui', () => {
 
     watch(
       () => ({ ...state }),
-      snapshot => saveUiState(snapshot),
+      snapshot => scheduleSave(snapshot),
       { deep: true }
     )
   }
@@ -234,6 +254,7 @@ export const useUiStore = defineStore('ui', () => {
     toggleDisplay,
     setHasUnappliedCode,
 
-    hydrate
+    hydrate,
+    flush
   }
 })

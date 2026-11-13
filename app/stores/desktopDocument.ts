@@ -6,14 +6,13 @@ import {
   parseProjectFile,
   serializeProjectFile
 } from '#shared/utils/projectFile'
-import {
-  pickOpenProjectFile,
-  pickSaveProjectFile,
-  readProjectFile,
-  writeProjectFile
-} from '~/utils/desktopFiles'
 import { useUiStore } from './ui'
 import { useWorkspaceStore } from './workspace'
+
+let desktopFilesPromise: Promise<typeof import('~/desktop/files')> | null = null
+function loadDesktopFiles() {
+  return (desktopFilesPromise ??= import('~/desktop/files'))
+}
 
 export interface DesktopFileOpResult {
   ok: boolean
@@ -63,6 +62,7 @@ export const useDesktopDocumentStore = defineStore('desktopDocument', () => {
 
     isBusy.value = true
     try {
+      const { readProjectFile } = await loadDesktopFiles()
       const raw = await readProjectFile(path)
       const parsed = parseProjectFile(raw)
       if (!parsed.ok) {
@@ -98,6 +98,7 @@ export const useDesktopDocumentStore = defineStore('desktopDocument', () => {
 
   async function pickAndOpenFile(): Promise<DesktopFileOpResult> {
     if (isBusy.value) return { ok: false, cancelled: true }
+    const { pickOpenProjectFile } = await loadDesktopFiles()
     const selected = await pickOpenProjectFile()
     if (!selected) return { ok: false, cancelled: true }
     return openPath(selected)
@@ -106,6 +107,7 @@ export const useDesktopDocumentStore = defineStore('desktopDocument', () => {
   async function writeWorkspaceToPath(path: string): Promise<DesktopFileOpResult> {
     isBusy.value = true
     try {
+      const { writeProjectFile } = await loadDesktopFiles()
       await writeProjectFile(path, serializeProjectFile(workspaceStore.workspace))
       currentFilePath.value = path
       syncSavedRevision()
@@ -128,6 +130,7 @@ export const useDesktopDocumentStore = defineStore('desktopDocument', () => {
 
   async function saveFileAs(): Promise<DesktopFileOpResult> {
     if (isBusy.value) return { ok: false, cancelled: true }
+    const { pickSaveProjectFile } = await loadDesktopFiles()
     const defaultName = `${slugify(uiStore.activeDatabase?.name ?? 'workspace')}.${PROJECT_FILE_EXTENSION}`
     const selected = await pickSaveProjectFile(currentFilePath.value ?? defaultName)
     if (!selected) return { ok: false, cancelled: true }

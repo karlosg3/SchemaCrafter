@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { UI_STATE_KEY, migrateV1ToWorkspace } from '#shared/utils/migrations'
 import { useUiStore } from '~/stores/ui'
 import { useWorkspaceStore } from '~/stores/workspace'
@@ -11,6 +11,10 @@ function seeded() {
   workspace.replaceWorkspace(migrateV1ToWorkspace(TEMPLATES.map(([, p]) => p)))
   return workspace
 }
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -58,15 +62,23 @@ describe('hydration', () => {
     expect(ui.state.editable).toBe(true)
   })
 
-  it('writes state back on change', async () => {
+  it('debounces writes on change and flushes immediately on demand', async () => {
+    vi.useFakeTimers()
     const workspace = seeded()
     const ui = useUiStore()
     ui.hydrate()
 
     ui.setViewLevel('databases')
     await nextTick()
+    expect(localStorage.getItem(UI_STATE_KEY)).toBeNull()
 
+    await vi.advanceTimersByTimeAsync(220)
     expect(JSON.parse(localStorage.getItem(UI_STATE_KEY)!)).toMatchObject({ viewLevel: 'databases' })
+
+    ui.setViewLevel('schemas')
+    await nextTick()
+    ui.flush()
+    expect(JSON.parse(localStorage.getItem(UI_STATE_KEY)!)).toMatchObject({ viewLevel: 'schemas' })
     expect(workspace.databases.length).toBeGreaterThan(0)
   })
 })

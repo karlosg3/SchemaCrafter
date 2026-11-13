@@ -14,11 +14,16 @@ const desktopDoc = isDesktop ? useDesktopDocumentStore() : null
 const desktopActions = isDesktop ? useDesktopDocumentActions() : null
 
 let unlistenFileOpen: (() => void) | null = null
+let unlistenDragDrop: (() => void) | null = null
 let unlistenClose: (() => void) | null = null
 let closePromptOpen = false
+const isFileDragOver = ref(false)
 
 function onVisibilityChange() {
-  if (document.visibilityState === 'hidden') workspace.flush()
+  if (document.visibilityState === 'hidden') {
+    workspace.flush()
+    ui.flush()
+  }
 }
 
 function onDesktopKeyDown(event: KeyboardEvent) {
@@ -55,23 +60,25 @@ onMounted(async () => {
   ui.hydrate()
   desktopDoc.syncSavedRevision()
 
+  const desktopFiles = await import('~/desktop/files')
+
   watch(
     () => desktopDoc.windowTitle,
-    title => void setDesktopWindowTitle(title).catch(() => {}),
+    title => void desktopFiles.setDesktopWindowTitle(title).catch(() => {}),
     { immediate: true }
   )
 
   document.addEventListener('keydown', onDesktopKeyDown)
 
   try {
-    const pendingPath = await takePendingOpenFile()
+    const pendingPath = await desktopFiles.takePendingOpenFile()
     if (pendingPath) await desktopActions.openPath(pendingPath, { skipDirtyCheck: true })
   } catch (error) {
     console.error('Failed to check startup file argument:', error)
   }
 
   try {
-    unlistenFileOpen = await listenOpenFileRequests((paths) => {
+    unlistenFileOpen = await desktopFiles.listenOpenFileRequests((paths) => {
       if (paths[0]) void desktopActions.openPath(paths[0])
     })
   } catch (error) {
@@ -79,7 +86,21 @@ onMounted(async () => {
   }
 
   try {
-    unlistenClose = await onDesktopCloseRequested(async (preventDefault) => {
+    unlistenDragDrop = await desktopFiles.listenDesktopDragDrop({
+      onHover: (hovering) => {
+        isFileDragOver.value = hovering
+      },
+      onDrop: (path) => {
+        isFileDragOver.value = false
+        void desktopActions.openPath(path)
+      }
+    })
+  } catch (error) {
+    console.error('Failed to attach drag-and-drop file handler:', error)
+  }
+
+  try {
+    unlistenClose = await desktopFiles.onDesktopCloseRequested(async (preventDefault) => {
       if (!desktopDoc.isDirty) return
       if (closePromptOpen) {
         preventDefault()
@@ -87,7 +108,7 @@ onMounted(async () => {
       }
       closePromptOpen = true
       try {
-        const discard = await confirmDesktopClose(
+        const discard = await desktopFiles.confirmDesktopClose(
           `You have unsaved changes in "${desktopDoc.fileName}". Close without saving?`
         )
         if (!discard) preventDefault()
@@ -104,10 +125,13 @@ onBeforeUnmount(() => {
   if (!desktopDoc) {
     document.removeEventListener('visibilitychange', onVisibilityChange)
     workspace.flush()
+    ui.flush()
     return
   }
 
   document.removeEventListener('keydown', onDesktopKeyDown)
+  ui.flush()
+  unlistenDragDrop?.()
   unlistenFileOpen?.()
   unlistenClose?.()
 })
@@ -181,6 +205,21 @@ const rightCollapsed = computed({
           <RightSidebar />
         </UDashboardSidebar>
       </UDashboardGroup>
+
+      <div
+        v-if="isDesktop && isFileDragOver"
+        class="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-surface-root/80 backdrop-blur-sm"
+      >
+        <div class="rounded-2xl border-2 border-dashed border-sky-400/70 bg-surface-raised/95 px-8 py-6 text-center shadow-2xl">
+          <UIcon name="i-lucide-file-up" class="mx-auto mb-2 size-8 text-sky-400" />
+          <p class="text-[14px] font-semibold text-ink-bright">
+            Drop project file to open
+          </p>
+          <p class="mt-1 text-[12px] text-ink-muted">
+            Supports <code class="font-mono text-sky-300">.schemacrafter</code> and <code class="font-mono text-sky-300">.json</code>
+          </p>
+        </div>
+      </div>
     </div>
   </UApp>
 </template>

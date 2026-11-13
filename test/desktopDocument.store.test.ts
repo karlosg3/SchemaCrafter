@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
   writeProjectFile: vi.fn<(path: string, content: string) => Promise<void>>()
 }))
 
-vi.mock('~/utils/desktopFiles', () => ({
+vi.mock('~/desktop/files', () => ({
   pickOpenProjectFile: mocks.pickOpenProjectFile,
   pickSaveProjectFile: mocks.pickSaveProjectFile,
   readProjectFile: mocks.readProjectFile,

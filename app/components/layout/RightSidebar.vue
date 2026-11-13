@@ -7,11 +7,16 @@ const ui = useUiStore()
 const workspace = useWorkspaceStore()
 const toast = useToast()
 
+const LazyCodeEditor = defineAsyncComponent(() => import('~/components/code/CodeEditor.vue'))
+const editorRef = ref<{ getValue: () => string, flush: () => string } | null>(null)
+
 // Destructured so each ref auto-unwraps in the template; refs reached through
 // an object property do not.
 const {
   draft,
   setDraft,
+  setLineCount,
+  markLiveDirty,
   discard,
   apply,
   requestTargetChange,
@@ -46,8 +51,9 @@ const STATUS = {
  * `writeText`, so a denied permission still celebrated and copied nothing.
  */
 async function copy() {
-  if (!draft.value) return
-  if (!await copyText(draft.value)) {
+  const content = editorRef.value?.getValue() ?? draft.value
+  if (!content) return
+  if (!await copyText(content)) {
     toast.add({ title: 'Could not copy', description: 'Clipboard access was denied.', color: 'error' })
     return
   }
@@ -58,9 +64,10 @@ async function copy() {
 
 function download() {
   const dbId = ui.activeDbId
-  if (!dbId || !draft.value) return
+  const content = editorRef.value?.getValue() ?? draft.value
+  if (!dbId || !content) return
   const name = workspace.database(dbId)?.name ?? 'schema'
-  downloadText(codeFileName(name, ui.state.codeTarget), draft.value)
+  downloadText(codeFileName(name, ui.state.codeTarget), content)
 }
 </script>
 
@@ -91,11 +98,15 @@ function download() {
 
     <!-- Editor -->
     <div class="flex-1 min-h-0 bg-surface-code" data-code-body>
-      <CodeEditor
+      <LazyCodeEditor
+        v-if="ui.state.rightOpen || isDirty"
+        ref="editorRef"
         :model-value="draft"
         :language="language"
         :engine="ui.engine"
         @update:model-value="setDraft"
+        @update:lines="setLineCount"
+        @dirty="markLiveDirty"
       />
     </div>
 
@@ -121,7 +132,7 @@ function download() {
           label="Apply to canvas"
           size="xs"
           :disabled="!canApply"
-          @click="apply()"
+          @click="apply(editorRef?.getValue())"
         />
         <UButton label="Discard" color="neutral" variant="ghost" size="xs" @click="discard()" />
       </div>
