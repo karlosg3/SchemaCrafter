@@ -507,7 +507,7 @@ const emptyStateMeta = computed(() => {
 
     <div v-if="isEmpty" class="absolute inset-0 grid place-items-center pointer-events-none px-4">
       <div class="pointer-events-auto sc-panel max-w-sm w-full p-6 text-center space-y-4">
-        <span class="mx-auto size-11 rounded-xl bg-accent-500/12 border border-accent-500/25 grid place-items-center text-accent-400">
+        <span class="mx-auto size-11 rounded-lg bg-accent-500/12 border border-accent-500/25 grid place-items-center text-accent-400">
           <UIcon :name="emptyStateMeta.icon" class="size-5" />
         </span>
         <div class="space-y-1">

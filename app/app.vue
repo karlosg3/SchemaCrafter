@@ -290,7 +290,7 @@ const rightCollapsed = computed({
         v-if="isDesktop && isFileDragOver"
         class="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-surface-root/80 backdrop-blur-sm"
       >
-        <div class="rounded-2xl border-2 border-dashed border-sky-400/70 bg-surface-raised/95 px-8 py-6 text-center shadow-2xl">
+        <div class="rounded-lg border-2 border-dashed border-sky-400/70 bg-surface-raised/95 px-8 py-6 text-center shadow-2xl">
           <UIcon name="i-lucide-file-up" class="mx-auto mb-2 size-8 text-sky-400" />
           <p class="text-[14px] font-semibold text-ink-bright">
             Drop project file to open
