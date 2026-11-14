@@ -97,6 +97,36 @@ describe('isValidWorkspace', () => {
       schemas: {},
       tables: { t1: { id: 't1', schemaId: 's1' } },
       enums: {}
+    }],
+    ['an unsupported database engine', {
+      formatVersion: 2,
+      databases: [{ id: 'db-1', name: 'Bad', engine: 'oracle', gradient: ['#000', '#111'], schemaIds: [] }],
+      schemas: {},
+      tables: {},
+      enums: {}
+    }],
+    ['a column with unknown type', {
+      formatVersion: 2,
+      databases: [],
+      schemas: {},
+      tables: {
+        t1: {
+          id: 't1',
+          schemaId: 's1',
+          name: 'bad',
+          gradient: ['#000', '#111'],
+          position: { x: 0, y: 0 },
+          columns: [{ id: 'c1', name: 'x', type: 'BLOB', isPrimaryKey: false, isNullable: true, isUnique: false }]
+        }
+      },
+      enums: {}
+    }],
+    ['an enum with non-array values', {
+      formatVersion: 2,
+      databases: [],
+      schemas: {},
+      tables: {},
+      enums: { e1: { id: 'e1', schemaId: 's1', name: 'E', values: 'a,b' } }
     }]
   ])('rejects %s', (_label, payload) => {
     expect(isValidWorkspace(payload)).toBe(false)

@@ -29,7 +29,13 @@ export default defineConfig({
             'test/migration.test.ts',
             'test/graph.test.ts',
             'test/importSql.test.ts',
-            'test/codeDiff.test.ts'
+            'test/codeDiff.test.ts',
+            'test/projectFile.test.ts',
+            'test/parsers.fixes.test.ts',
+            'test/layout.test.ts',
+            'test/exporters.test.ts',
+            'test/sqlDiff.test.ts',
+            'test/releaseMeta.test.ts'
           ]
         }
       },

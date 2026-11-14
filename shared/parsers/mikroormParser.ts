@@ -1,4 +1,5 @@
 import type { Table, Column, DataType, DatabaseProject, SchemaGroup, EnumDefinition } from '../types/schema';
+import { createId } from '../utils/ids';
 
 export function parseMikroOrmToProject(codeText: string, currentProject: DatabaseProject): DatabaseProject {
   const schemasMap = new Map<string, SchemaGroup>();
@@ -39,7 +40,7 @@ export function parseMikroOrmToProject(codeText: string, currentProject: Databas
     }
 
     enums.push({
-      id: `enum-${enumName.toLowerCase()}-${Date.now()}`,
+      id: createId(`enum-${enumName.toLowerCase()}`),
       name: enumName,
       values,
       position: { x: enumX, y: enumY }
@@ -77,7 +78,7 @@ export function parseMikroOrmToProject(codeText: string, currentProject: Databas
     if (schemaName) {
       if (!schemasMap.has(schemaName)) {
         const newSchema: SchemaGroup = {
-          id: `schema-${schemaName}-${Date.now()}`,
+          id: createId(`schema-${schemaName}`),
           name: schemaName,
           color: colors[colorIdx++ % colors.length]!
         };
@@ -129,6 +130,12 @@ export function parseMikroOrmToProject(codeText: string, currentProject: Databas
         }
 
         const type: DataType = isEnum ? 'ENUM' : mapTsTypeToDataType(rawTsType, combinedDec);
+        const lenMatch = type === 'VARCHAR' ? /\blength\s*:\s*(\d+)/.exec(combinedDec) : null;
+        const precMatch = type === 'DECIMAL' ? /\bprecision\s*:\s*(\d+)/.exec(combinedDec) : null;
+        const scaleMatch = type === 'DECIMAL' ? /\bscale\s*:\s*(\d+)/.exec(combinedDec) : null;
+        const parsedLength = lenMatch?.[1] ? Number.parseInt(lenMatch[1], 10) : undefined;
+        const parsedPrecision = precMatch?.[1] ? Number.parseInt(precMatch[1], 10) : undefined;
+        const parsedScale = scaleMatch?.[1] ? Number.parseInt(scaleMatch[1], 10) : undefined;
         const isNullable = combinedDec.includes('nullable: true') || isOptional;
         const isUnique = combinedDec.includes('unique: true');
 
@@ -145,6 +152,9 @@ export function parseMikroOrmToProject(codeText: string, currentProject: Databas
           id: `${tableName}-col-${colIndex++}`,
           name: propName,
           type,
+          ...(parsedLength !== undefined && parsedLength > 0 ? { length: parsedLength } : {}),
+          ...(parsedPrecision !== undefined && parsedPrecision > 0 ? { precision: parsedPrecision } : {}),
+          ...(parsedScale !== undefined && parsedScale >= 0 ? { scale: parsedScale } : {}),
           enumName: detectedEnumName,
           isPrimaryKey,
           isNullable: isPrimaryKey ? false : isNullable,
@@ -218,6 +228,9 @@ export function parseMikroOrmToProject(codeText: string, currentProject: Databas
 
 function mapTsTypeToDataType(tsType: string, decoratorStr: string): DataType {
   if (decoratorStr.includes("type: 'text'") || decoratorStr.includes("type: 'varchar'")) return 'TEXT';
+  if (decoratorStr.includes("type: 'decimal'") || decoratorStr.includes("columnType: 'numeric'") || /\bprecision\s*:/.test(decoratorStr)) {
+    return 'DECIMAL';
+  }
   if (decoratorStr.includes("columnType: 'bigint'")) return 'BIGINT';
   if (decoratorStr.includes("columnType: 'timestamptz'") || tsType === 'Date') return 'TIMESTAMP';
   if (tsType === 'number') return 'INT';

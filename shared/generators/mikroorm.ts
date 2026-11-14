@@ -36,6 +36,7 @@ export function generateMikroOrmSchema(project: DatabaseProject): string {
           const options: string[] = [];
           if (col.isNullable) options.push(`nullable: true`);
           if (col.foreignKey.onDelete) options.push(`onDelete: '${col.foreignKey.onDelete.toLowerCase()}'`);
+          if (col.foreignKey.onUpdate) options.push(`onUpdate: '${col.foreignKey.onUpdate.toLowerCase()}'`);
           if (options.length > 0) {
             decorator += `, { ${options.join(', ')} }`;
           }
@@ -70,6 +71,11 @@ export function generateMikroOrmSchema(project: DatabaseProject): string {
         code += `  ${pkDec}\n`;
       } else {
         const propOpts: string[] = [];
+        if (col.type === 'VARCHAR' && col.length !== undefined) propOpts.push(`length: ${col.length}`);
+        if (col.type === 'DECIMAL' && (col.precision !== undefined || col.scale !== undefined)) {
+          propOpts.push(`precision: ${col.precision ?? 10}`);
+          propOpts.push(`scale: ${col.scale ?? 2}`);
+        }
         if (col.isNullable) propOpts.push('nullable: true');
         if (col.isUnique) propOpts.push('unique: true');
         if (col.defaultValue) propOpts.push(`default: '${col.defaultValue}'`);

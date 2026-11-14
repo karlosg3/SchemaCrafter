@@ -87,9 +87,19 @@ export function migrateV1ToWorkspace(projects: DatabaseProject[]): Workspace {
         schemaId,
         name: t.name,
         gradient: gradientFromColor(t.color),
-        columns: t.columns ?? [],
-        ...(t.indexes ? { indexes: t.indexes } : {}),
-        position: t.position ?? { x: 80, y: 80 },
+        columns: (t.columns ?? []).map(col => ({
+          ...col,
+          ...(col.foreignKey ? { foreignKey: { ...col.foreignKey } } : {})
+        })),
+        ...(t.indexes
+          ? {
+              indexes: t.indexes.map(idx => ({
+                ...idx,
+                columnNames: [...idx.columnNames]
+              }))
+            }
+          : {}),
+        position: t.position ? { ...t.position } : { x: 80, y: 80 },
         ...(t.comment ? { comment: t.comment } : {})
       }
       ws.tables[t.id] = table
@@ -102,8 +112,8 @@ export function migrateV1ToWorkspace(projects: DatabaseProject[]): Workspace {
         id: e.id,
         schemaId,
         name: e.name,
-        values: e.values ?? [],
-        ...(e.position ? { position: e.position } : {}),
+        values: [...(e.values ?? [])],
+        ...(e.position ? { position: { ...e.position } } : {}),
         ...(e.comment ? { comment: e.comment } : {})
       }
       ws.enums[e.id] = enumEntity
@@ -126,11 +136,75 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+const VALID_ENGINES = new Set(['postgresql', 'mysql', 'sqlite'])
+const VALID_DATA_TYPES = new Set([
+  'INT', 'BIGINT', 'VARCHAR', 'TEXT', 'BOOLEAN', 'UUID',
+  'DECIMAL', 'FLOAT', 'TIMESTAMP', 'DATE', 'JSON', 'ENUM'
+])
+const VALID_FK_ACTIONS = new Set(['CASCADE', 'RESTRICT', 'SET NULL', 'NO ACTION'])
+const VALID_INDEX_TYPES = new Set(['BTREE', 'HASH', 'GIN', 'GIST'])
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(v => typeof v === 'string')
+}
+
+function isGradient(value: unknown): boolean {
+  return Array.isArray(value) && value.length === 2 && typeof value[0] === 'string' && typeof value[1] === 'string'
+}
+
+function isXY(value: unknown): boolean {
+  return isObject(value)
+    && typeof value.x === 'number' && Number.isFinite(value.x)
+    && typeof value.y === 'number' && Number.isFinite(value.y)
+}
+
+function isWH(value: unknown): boolean {
+  return isObject(value)
+    && typeof value.width === 'number' && Number.isFinite(value.width)
+    && typeof value.height === 'number' && Number.isFinite(value.height)
+}
+
+function isValidForeignKey(fk: unknown): boolean {
+  if (!isObject(fk)) return false
+  if (typeof fk.targetTableId !== 'string' || typeof fk.targetColumnId !== 'string') return false
+  if (fk.onDelete !== undefined && (typeof fk.onDelete !== 'string' || !VALID_FK_ACTIONS.has(fk.onDelete))) return false
+  if (fk.onUpdate !== undefined && (typeof fk.onUpdate !== 'string' || !VALID_FK_ACTIONS.has(fk.onUpdate))) return false
+  return true
+}
+
+function isValidColumn(col: unknown): boolean {
+  if (!isObject(col)) return false
+  if (typeof col.id !== 'string' || typeof col.name !== 'string') return false
+  if (typeof col.type !== 'string' || !VALID_DATA_TYPES.has(col.type)) return false
+  if (typeof col.isPrimaryKey !== 'boolean' || typeof col.isNullable !== 'boolean' || typeof col.isUnique !== 'boolean') {
+    return false
+  }
+  if (col.isIndexed !== undefined && typeof col.isIndexed !== 'boolean') return false
+  if (col.isAutoIncrement !== undefined && typeof col.isAutoIncrement !== 'boolean') return false
+  if (col.length !== undefined && (typeof col.length !== 'number' || !Number.isInteger(col.length) || col.length <= 0)) return false
+  if (col.precision !== undefined && (typeof col.precision !== 'number' || !Number.isInteger(col.precision) || col.precision <= 0)) return false
+  if (col.scale !== undefined && (typeof col.scale !== 'number' || !Number.isInteger(col.scale) || col.scale < 0)) return false
+  if (col.enumName !== undefined && typeof col.enumName !== 'string') return false
+  if (col.defaultValue !== undefined && typeof col.defaultValue !== 'string') return false
+  if (col.comment !== undefined && typeof col.comment !== 'string') return false
+  if (col.foreignKey !== undefined && !isValidForeignKey(col.foreignKey)) return false
+  return true
+}
+
+function isValidIndex(idx: unknown): boolean {
+  if (!isObject(idx)) return false
+  if (typeof idx.id !== 'string' || typeof idx.name !== 'string' || !isStringArray(idx.columnNames)) return false
+  if (idx.isUnique !== undefined && typeof idx.isUnique !== 'boolean') return false
+  if (idx.type !== undefined && (typeof idx.type !== 'string' || !VALID_INDEX_TYPES.has(idx.type))) return false
+  return true
+}
+
 /**
  * Structural check on a persisted v2 payload.
  *
  * v1's loader trusted any array it found, so a malformed payload surfaced later
- * as a crash deep in a generator. This rejects it up front.
+ * as a crash deep in a generator. This rejects invalid workspaces, entities,
+ * columns, enums, engines and gradients up front.
  */
 export function isValidWorkspace(value: unknown): value is Workspace {
   if (!isObject(value)) return false
@@ -140,23 +214,51 @@ export function isValidWorkspace(value: unknown): value is Workspace {
 
   const schemas = value.schemas as Record<string, unknown>
   const tables = value.tables as Record<string, unknown>
+  const enums = value.enums as Record<string, unknown>
 
   for (const db of value.databases) {
     if (!isObject(db)) return false
     if (typeof db.id !== 'string' || typeof db.name !== 'string') return false
-    if (!Array.isArray(db.schemaIds)) return false
+    if (typeof db.engine !== 'string' || !VALID_ENGINES.has(db.engine)) return false
+    if (!isGradient(db.gradient)) return false
+    if (!isStringArray(db.schemaIds)) return false
+    if (db.position !== undefined && !isXY(db.position)) return false
+    if (db.size !== undefined && !isWH(db.size)) return false
+    if (db.comment !== undefined && typeof db.comment !== 'string') return false
   }
 
   for (const schema of Object.values(schemas)) {
     if (!isObject(schema)) return false
-    if (typeof schema.id !== 'string' || typeof schema.name !== 'string') return false
-    if (!Array.isArray(schema.tableIds) || !Array.isArray(schema.enumIds)) return false
+    if (typeof schema.id !== 'string' || typeof schema.dbId !== 'string' || typeof schema.name !== 'string') return false
+    if (!isGradient(schema.gradient)) return false
+    if (!isStringArray(schema.tableIds) || !isStringArray(schema.enumIds)) return false
+    if (schema.position !== undefined && !isXY(schema.position)) return false
+    if (schema.size !== undefined && !isWH(schema.size)) return false
+    if (schema.comment !== undefined && typeof schema.comment !== 'string') return false
   }
 
   for (const table of Object.values(tables)) {
     if (!isObject(table)) return false
-    if (typeof table.id !== 'string' || typeof table.schemaId !== 'string') return false
-    if (!Array.isArray(table.columns)) return false
+    if (typeof table.id !== 'string' || typeof table.schemaId !== 'string' || typeof table.name !== 'string') return false
+    if (!isGradient(table.gradient)) return false
+    if (!isXY(table.position)) return false
+    if (table.size !== undefined && !isWH(table.size)) return false
+    if (table.comment !== undefined && typeof table.comment !== 'string') return false
+    if (!Array.isArray(table.columns) || !table.columns.every(isValidColumn)) return false
+    if (table.indexes !== undefined && (!Array.isArray(table.indexes) || !table.indexes.every(isValidIndex))) {
+      return false
+    }
+  }
+
+  for (const enumEntity of Object.values(enums)) {
+    if (!isObject(enumEntity)) return false
+    if (typeof enumEntity.id !== 'string' || typeof enumEntity.schemaId !== 'string' || typeof enumEntity.name !== 'string') {
+      return false
+    }
+    if (!isStringArray(enumEntity.values)) return false
+    if (enumEntity.position !== undefined && !isXY(enumEntity.position)) return false
+    if (enumEntity.size !== undefined && !isWH(enumEntity.size)) return false
+    if (enumEntity.comment !== undefined && typeof enumEntity.comment !== 'string') return false
   }
 
   return true

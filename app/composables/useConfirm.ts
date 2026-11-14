@@ -4,6 +4,7 @@ export interface ConfirmOptions {
   title?: string
   message: string
   confirmLabel?: string
+  color?: 'error' | 'primary'
 }
 
 /**

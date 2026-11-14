@@ -21,10 +21,17 @@ watch(() => props.draft, (next) => {
 const close = (draft: EnumDraft | null) => emit('close', draft)
 useModalDismiss(open, close, null)
 
-/** An enum with no values generates nothing, so it is not a valid save. */
 const canSubmit = computed(() =>
   local.value.name.trim().length > 0 && local.value.values.some(v => v.trim().length > 0)
 )
+const normalizedEnumName = computed(() => {
+  const raw = local.value.name
+  if (!raw.trim()) return undefined
+  const next = raw.trim().replace(/\s+/g, '_')
+  return next !== raw ? `Saves as ${next}` : undefined
+})
+
+const previewValues = computed(() => local.value.values.map(v => v.trim()).filter(Boolean))
 
 function addValue() {
   local.value.values.push('')
@@ -44,17 +51,37 @@ function submit() {
 </script>
 
 <template>
-  <UModal v-model:open="open" :title="title" @after:leave="emit('after:leave')">
+  <UModal
+    v-model:open="open"
+    :title="title"
+    :ui="{ content: 'max-w-md border border-line-chrome bg-surface-chrome' }"
+    @after:leave="emit('after:leave')"
+  >
     <template #body>
       <form id="enum-form" class="space-y-4" @submit.prevent="submit">
-        <UFormField label="Enum name" required>
+        <UFormField label="Enum name" required :hint="normalizedEnumName">
           <UInput v-model="local.name" placeholder="e.g. OrderStatus" autofocus class="w-full font-mono" />
         </UFormField>
 
+        <div v-if="previewValues.length > 0" class="flex flex-wrap gap-1.5 rounded-lg border border-line-panel bg-surface-raised/60 p-2.5">
+          <span
+            v-for="(val, i) in previewValues"
+            :key="`${val}-${i}`"
+            class="rounded px-2 py-0.5 font-mono text-[11px] bg-red-500/12 text-red-300 [.light_&]:text-red-700 border border-red-500/25"
+          >
+            {{ val }}
+          </span>
+        </div>
+
         <UFormField label="Values" required>
-          <div class="space-y-1.5">
+          <div class="space-y-1.5 max-h-56 overflow-y-auto scrollbar-thin pr-1">
             <div v-for="(_, index) in local.values" :key="index" class="flex items-center gap-1.5">
-              <UInput v-model="local.values[index]" placeholder="value" class="flex-1 font-mono" />
+              <UInput
+                v-model="local.values[index]"
+                placeholder="VALUE_NAME"
+                class="flex-1 font-mono"
+                @keydown.enter.prevent="addValue()"
+              />
               <UButton
                 icon="i-ph-trash"
                 color="neutral"
@@ -65,17 +92,17 @@ function submit() {
                 @click="removeValue(index)"
               />
             </div>
-
-            <button
-              type="button"
-              class="w-full h-8 border-2 border-dashed border-line-dashed text-[11.5px]
-                     text-accent-400 hover:bg-white/5 transition-colors
-                     focus-visible:outline-2 focus-visible:outline-accent-500"
-              @click="addValue()"
-            >
-              + Add value
-            </button>
           </div>
+
+          <button
+            type="button"
+            class="mt-2 w-full h-8 rounded-md border border-dashed border-line-dashed text-[11.5px] font-medium
+                   text-accent-400 hover:bg-accent-500/8 transition-colors
+                   focus-visible:outline-2 focus-visible:outline-accent-500"
+            @click="addValue()"
+          >
+            + Add value
+          </button>
         </UFormField>
       </form>
     </template>

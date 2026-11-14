@@ -7,12 +7,20 @@ export default defineNuxtConfig({
   // server data and no SEO surface, so SSR would only buy hydration mismatches.
   ssr: false,
 
+  devServer: {
+    host: process.env.TAURI_DEV_HOST || 'localhost'
+  },
+
   modules: [
     '@nuxt/ui',
     '@nuxt/eslint',
     '@pinia/nuxt',
     '@vueuse/nuxt'
   ],
+
+  ui: {
+    fonts: false
+  },
 
   css: ['~/assets/css/main.css'],
 
@@ -58,11 +66,21 @@ export default defineNuxtConfig({
    * token gets coloured. Deduping is what keeps them the same objects.
    */
   vite: {
+    clearScreen: false,
+    envPrefix: ['VITE_', 'TAURI_'],
+    server: {
+      strictPort: true
+    },
+    worker: {
+      format: 'es'
+    },
     resolve: {
       dedupe: [
         '@codemirror/state',
         '@codemirror/view',
         '@codemirror/language',
+        '@codemirror/search',
+        '@codemirror/autocomplete',
         '@lezer/common',
         '@lezer/highlight'
       ]
@@ -72,12 +90,28 @@ export default defineNuxtConfig({
         '@codemirror/state',
         '@codemirror/view',
         '@codemirror/language',
+        '@codemirror/search',
+        '@codemirror/autocomplete',
         '@codemirror/commands',
         '@codemirror/lang-javascript',
         '@codemirror/lang-sql',
         '@lezer/common',
         '@lezer/highlight'
       ]
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('/node_modules/')) return
+            if (id.includes('/@codemirror/') || id.includes('/@lezer/')) return 'codemirror'
+            if (id.includes('/@vue-flow/')) return 'vue-flow'
+            if (id.includes('/@tauri-apps/')) return 'tauri'
+            if (id.includes('/@nuxt/ui/') || id.includes('/reka-ui/') || id.includes('/tailwind-variants/')) return 'ui-kit'
+            if (id.includes('/@vue/') || id.includes('/vue/') || id.includes('/pinia/')) return 'framework'
+          }
+        }
+      }
     }
   },
 

@@ -10,6 +10,9 @@ const props = defineProps<{
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ close: [sql: string | null], 'after:leave': [] }>()
 
+const LazyCodeEditor = defineAsyncComponent(() => import('~/components/code/CodeEditor.vue'))
+const editorRef = ref<{ getValue: () => string, flush: () => string } | null>(null)
+
 const SAMPLE = `CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR UNIQUE NOT NULL,
@@ -20,7 +23,7 @@ CREATE TABLE posts (
   id INT PRIMARY KEY,
   title VARCHAR NOT NULL,
   content TEXT,
-  author_id UUID
+  author_id UUID REFERENCES users(id) ON DELETE CASCADE
 );`
 
 const sql = ref('')
@@ -28,13 +31,8 @@ const sql = ref('')
 const close = (value: string | null) => emit('close', value)
 useModalDismiss(open, close, null)
 
-// Debounced so a long DDL paste is not re-parsed on every keystroke.
 const debounced = refDebounced(sql, 250)
 
-/**
- * A dry run of the same merge the caller will perform, so the modal can say
- * what is about to happen before it happens.
- */
 const preview = computed(() => {
   if (!debounced.value.trim()) return null
   try {
@@ -50,8 +48,13 @@ const canSubmit = computed(() => {
   return !!p && !('error' in p) && (p.added.length > 0 || p.updated.length > 0)
 })
 
+function loadSample() {
+  sql.value = SAMPLE
+}
+
 function submit() {
-  if (canSubmit.value) close(sql.value)
+  const live = editorRef.value?.flush() ?? sql.value
+  if (canSubmit.value || (live.trim() && !preview.value)) close(live)
 }
 </script>
 
@@ -59,32 +62,56 @@ function submit() {
   <UModal
     v-model:open="open"
     title="Import SQL"
-    description="Paste CREATE TABLE statements. Tables that already exist are refreshed in place; everything else is left alone."
-    :ui="{ content: 'max-w-2xl' }"
+    description="Paste CREATE TABLE statements. Existing tables are refreshed in place; everything else stays untouched."
+    :ui="{ content: 'max-w-2xl border border-line-chrome bg-surface-chrome' }"
     @after:leave="emit('after:leave')"
   >
     <template #body>
       <form id="import-form" class="space-y-3" @submit.prevent="submit">
-        <UTextarea
-          v-model="sql"
-          :rows="14"
-          autofocus
-          :placeholder="SAMPLE"
-          class="w-full font-mono text-xs"
-          aria-label="SQL DDL"
-        />
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-mono text-ink-dim uppercase tracking-[0.06em]">
+            SQL Dialect: {{ project.engine }}
+          </span>
+          <UButton
+            label="Load sample SQL"
+            icon="i-ph-sparkle"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            @click="loadSample()"
+          />
+        </div>
 
-        <p v-if="preview && 'error' in preview" class="text-[11.5px] text-red-400">
+        <div class="h-72 rounded-lg border border-line-panel overflow-hidden bg-surface-code">
+          <LazyCodeEditor
+            v-if="open"
+            ref="editorRef"
+            :model-value="sql"
+            language="sql"
+            :engine="project.engine"
+            @update:model-value="v => sql = v"
+          />
+        </div>
+
+        <div v-if="preview && 'error' in preview" class="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-[11.5px] text-red-400">
           {{ preview.error }}
-        </p>
-        <p v-else-if="preview" class="text-[11.5px] text-ink-dim font-mono">
-          <span v-if="preview.added.length" class="text-accent-400">+{{ preview.added.length }} new</span>
-          <span v-if="preview.added.length && preview.updated.length"> · </span>
-          <span v-if="preview.updated.length">{{ preview.updated.length }} updated</span>
-          <span v-if="!preview.added.length && !preview.updated.length">No CREATE TABLE statements found</span>
-        </p>
+        </div>
+        <div
+          v-else-if="preview"
+          class="flex flex-wrap items-center gap-2 rounded-md border border-line-panel bg-surface-raised/60 px-3 py-2 text-[11.5px] font-mono text-ink-dim"
+        >
+          <span v-if="preview.added.length" class="text-emerald-400 [.light_&]:text-emerald-700">
+            +{{ preview.added.length }} new ({{ preview.added.join(', ') }})
+          </span>
+          <span v-if="preview.updated.length" class="text-sky-400 [.light_&]:text-sky-700">
+            ~{{ preview.updated.length }} updated ({{ preview.updated.join(', ') }})
+          </span>
+          <span v-if="!preview.added.length && !preview.updated.length" class="text-ink-faint">
+            No CREATE TABLE statements detected yet.
+          </span>
+        </div>
         <p v-else class="text-[11.5px] text-ink-faint">
-          Nothing to import yet.
+          Paste DDL above or click "Load sample SQL" to preview schema diff.
         </p>
       </form>
     </template>
@@ -92,7 +119,7 @@ function submit() {
     <template #footer>
       <div class="flex items-center justify-end gap-2 w-full">
         <UButton label="Cancel" color="neutral" variant="ghost" @click="close(null)" />
-        <UButton label="Import" type="submit" form="import-form" :disabled="!canSubmit" />
+        <UButton label="Import tables" icon="i-ph-upload-simple" type="submit" form="import-form" :disabled="!canSubmit" />
       </div>
     </template>
   </UModal>

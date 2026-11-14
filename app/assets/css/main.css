@@ -1,32 +1,35 @@
+@import "@fontsource-variable/inter/index.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource/jetbrains-mono/600.css";
 @import "tailwindcss";
 @import "@nuxt/ui";
 
 /*
- * Design tokens ported from .claude/docs/DB Canvas Designer.dc.html, where every
- * value lived as an inline literal. Dark is the only theme the prototype has.
+ * Precision Dark CAD / Studio design tokens, with Light mode overrides below.
  */
 @theme static {
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Inter Variable', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 
   /* Surfaces */
-  --color-surface-root: #0a0b0d;
-  --color-surface-chrome: #111318;
-  --color-surface-canvas: #0d0f13;
-  --color-surface-code: #0c0e12;
-  --color-surface-block: #141720;
-  --color-surface-raised: #171b21;
-  --color-surface-input: #1c2029;
+  --color-surface-root: #090a0d;
+  --color-surface-chrome: #11131a;
+  --color-surface-canvas: #0b0d12;
+  --color-surface-code: #0c0e14;
+  --color-surface-block: #151822;
+  --color-surface-raised: #181c26;
+  --color-surface-input: #1e2330;
 
   /* Text ramp */
-  --color-ink-bright: #e7e9ec;
-  --color-ink: #c7cad1;
-  --color-ink-muted: #9aa1ac;
-  --color-ink-dim: #6b7280;
-  --color-ink-faint: #5b6270;
+  --color-ink-bright: #eef0f4;
+  --color-ink: #cbd0d8;
+  --color-ink-muted: #98a0ad;
+  --color-ink-dim: #6f7785;
+  --color-ink-faint: #596070;
   --color-ink-tool: #8b92a0;
-  --color-ink-code: #d3d6db;
-  --color-ink-gutter: #4b5262;
+  --color-ink-code: #d7dce4;
+  --color-ink-gutter: #4c5363;
 
   /* Hairlines */
   --color-line-row: rgb(255 255 255 / 0.05);
@@ -34,10 +37,10 @@
   --color-line-chrome: rgb(255 255 255 / 0.09);
   --color-line-header: rgb(255 255 255 / 0.10);
   --color-line-panel: rgb(255 255 255 / 0.12);
-  --color-line-block: rgb(255 255 255 / 0.14);
+  --color-line-block: rgb(255 255 255 / 0.13);
   --color-line-dashed: rgb(255 255 255 / 0.18);
 
-  /* Accent — oklch(66% 0.19 262) is the prototype default */
+  /* Accent */
   --color-accent-50: oklch(97% 0.02 262);
   --color-accent-100: oklch(94% 0.04 262);
   --color-accent-200: oklch(89% 0.07 262);
@@ -54,33 +57,100 @@
   --color-pk: #facc15;
   --color-sync-pending: #f59e0b;
   --color-sync-ok: #22c55e;
-  --color-rel-fk: rgb(99 102 241 / 0.65);
-  --color-rel-enum: rgb(239 68 68 / 0.65);
-  --color-rel-cross: rgb(148 163 184 / 0.45);
-  --color-rel-aggregate: rgb(148 163 184 / 0.6);
+  --color-rel-fk: rgb(129 140 248 / 0.72);
+  --color-rel-enum: rgb(248 113 113 / 0.68);
+  --color-rel-cross: rgb(148 163 184 / 0.50);
+  --color-rel-aggregate: rgb(148 163 184 / 0.60);
 
-  /* Block geometry — see app/composables/useBlockGeometry.ts */
+  /* Block geometry — mirrored in shared/utils/graph.ts */
   --block-width: 260px;
   --block-width-enum: 220px;
   --block-header-h: 40px;
   --block-row-h: 32px;
   --block-row-h-enum: 28px;
   --block-footer-h: 34px;
-  --block-border-w: 2px;
+  --block-border-w: 1px;
 }
 
 :root {
   color-scheme: dark;
+  --color-canvas-dot: rgb(255 255 255 / 0.08);
+  --sc-block-shadow: 0 12px 30px -10px rgb(0 0 0 / 0.65), 0 2px 6px rgb(0 0 0 / 0.35);
+  --sc-panel-bg: rgb(21 24 34 / 0.86);
+  --cm-comment: #636b7a;
+  --cm-keyword: #c084fc;
+  --cm-type: #7dd3fc;
+  --cm-string: #86efac;
+  --cm-number: #fbbf24;
+  --cm-attribute: #f0abfc;
+  --cm-atom: #fca5a5;
+  --cm-name: #d1d5db;
+  --cm-punctuation: #768091;
+  --cm-operator: #9aa1ac;
+  --cm-invalid: #f87171;
+  --cm-active-line: rgb(255 255 255 / 0.035);
+  --cm-bracket-bg: rgb(255 255 255 / 0.10);
 }
 
-/*
- * refactor-plan.md:39 requires sharp corners. Nuxt UI sizes every component's
- * corners as rounded-[calc(var(--ui-radius)*N)], so zeroing this one token
- * squares the entire library instead of overriding it per component.
- */
+:root.light,
+html.light {
+  color-scheme: light;
+
+  --color-surface-root: #f1f4f9;
+  --color-surface-chrome: #ffffff;
+  --color-surface-canvas: #eef1f6;
+  --color-surface-code: #f8fafc;
+  --color-surface-block: #ffffff;
+  --color-surface-raised: #f8fafc;
+  --color-surface-input: #f1f5f9;
+
+  --color-ink-bright: #0f172a;
+  --color-ink: #1e293b;
+  --color-ink-muted: #475569;
+  --color-ink-dim: #64748b;
+  --color-ink-faint: #94a3b8;
+  --color-ink-tool: #64748b;
+  --color-ink-code: #1e293b;
+  --color-ink-gutter: #94a3b8;
+
+  --color-line-row: rgb(15 23 42 / 0.06);
+  --color-line-rail: rgb(15 23 42 / 0.08);
+  --color-line-chrome: rgb(15 23 42 / 0.10);
+  --color-line-header: rgb(15 23 42 / 0.11);
+  --color-line-panel: rgb(15 23 42 / 0.14);
+  --color-line-block: rgb(15 23 42 / 0.15);
+  --color-line-dashed: rgb(15 23 42 / 0.22);
+
+  --color-pk: #ca8a04;
+  --color-rel-fk: rgb(79 70 229 / 0.72);
+  --color-rel-enum: rgb(220 38 38 / 0.65);
+  --color-rel-cross: rgb(100 116 139 / 0.55);
+  --color-rel-aggregate: rgb(100 116 139 / 0.65);
+
+  --color-canvas-dot: rgb(15 23 42 / 0.14);
+  --sc-block-shadow: 0 10px 26px -10px rgb(15 23 42 / 0.14), 0 1px 3px rgb(15 23 42 / 0.08);
+  --sc-panel-bg: rgb(255 255 255 / 0.88);
+
+  --cm-comment: #64748b;
+  --cm-keyword: #7c3aed;
+  --cm-type: #0284c7;
+  --cm-string: #15803d;
+  --cm-number: #b45309;
+  --cm-attribute: #a21caf;
+  --cm-atom: #b91c1c;
+  --cm-name: #1e293b;
+  --cm-punctuation: #64748b;
+  --cm-operator: #475569;
+  --cm-invalid: #dc2626;
+  --cm-active-line: rgb(15 23 42 / 0.04);
+  --cm-bracket-bg: rgb(15 23 42 / 0.08);
+}
+
 :root,
-.dark {
-  --ui-radius: 0rem;
+.dark,
+.light {
+  /* Subtle technical micro-radius (midpoint between 0px sharp CAD and pillowy cards) */
+  --ui-radius: 0.125rem;
 
   --ui-bg: var(--color-surface-chrome);
   --ui-bg-muted: var(--color-surface-block);
@@ -106,46 +176,39 @@ body {
   font-size: 13px;
 }
 
-/* refactor-plan.md:39 — "bordes anchos", applied to chrome as well as blocks. */
 @layer components {
   .sc-panel {
-    background-color: var(--color-surface-block);
-    border: var(--block-border-w) solid var(--color-line-panel);
-    box-shadow: 0 8px 20px rgb(0 0 0 / 0.4);
+    background-color: var(--sc-panel-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--color-line-panel);
+    border-radius: 4px;
+    box-shadow: 0 10px 28px -8px rgb(0 0 0 / 0.42);
   }
 
   .sc-block {
     background-color: var(--color-surface-block);
     border: var(--block-border-w) solid var(--color-line-block);
-    box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
+    border-radius: 4px;
+    box-shadow: var(--sc-block-shadow);
+    transition: border-color 140ms ease, box-shadow 140ms ease;
+  }
+
+  .sc-block:hover {
+    border-color: var(--color-line-dashed);
   }
 }
 
-/*
- * Vue Flow.
- *
- * Only @vue-flow/core/dist/style.css is imported (in SchemaCanvas.vue) — it
- * carries the positioning the library cannot work without. theme-default.css is
- * deliberately left out: it paints a light-mode canvas we would override in
- * full. Selectors are qualified with the library's own class so they win
- * regardless of which stylesheet Vite emits first.
- */
 .vue-flow__handle.sc-handle {
   width: 9px;
   height: 9px;
-  border-radius: 0;
+  border-radius: 2px;
   background: var(--color-surface-block);
   border: 2px solid var(--color-line-panel);
   opacity: 0;
-  transition: opacity 120ms ease, border-color 120ms ease, background-color 120ms ease;
+  transition: opacity 120ms ease, border-color 120ms ease, background-color 120ms ease, transform 120ms ease;
 }
 
-/*
- * Sit the handle *inside* the block rather than straddling its edge. The block
- * clips its content, so the library's default translate(-50%) put half the hit
- * area — and on the boundary pixel, elementFromPoint — outside the clip, and
- * connections silently failed to start.
- */
 .vue-flow__handle-left.sc-handle {
   left: 0;
   transform: translate(0, -50%);
@@ -156,7 +219,6 @@ body {
   transform: translate(0, -50%);
 }
 
-/* Revealed with the block, so 20 column handles are not permanent noise. */
 .vue-flow__node:hover .vue-flow__handle.sc-handle,
 .vue-flow__node.selected .vue-flow__handle.sc-handle,
 .vue-flow.connecting .vue-flow__handle.sc-handle {
@@ -166,10 +228,9 @@ body {
 .vue-flow__handle.sc-handle:hover,
 .vue-flow__handle.sc-handle.connectingto {
   background: var(--color-accent-500);
-  border-color: var(--color-accent-400);
+  border-color: var(--color-accent-300);
 }
 
-/* Attachment points for derived edges; never grabbable, never visible. */
 .vue-flow__handle.sc-handle-hidden {
   width: 1px;
   height: 1px;
@@ -192,10 +253,10 @@ body {
 }
 
 .vue-flow__resize-control.sc-resize-handle {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border: 2px solid var(--color-accent-400);
-  border-radius: 0;
+  border-radius: 2px;
   background: var(--color-surface-block);
   opacity: 0;
 }
@@ -205,18 +266,39 @@ body {
   opacity: 1;
 }
 
+.vue-flow__minimap.sc-minimap {
+  background: var(--sc-panel-bg);
+  border: 1px solid var(--color-line-panel);
+  border-radius: 4px;
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+  box-shadow: 0 10px 24px -8px rgb(0 0 0 / 0.35);
+}
+
+.vue-flow__minimap.sc-minimap .vue-flow__minimap-mask {
+  fill: color-mix(in srgb, var(--color-surface-root) 65%, transparent);
+}
+
+.vue-flow__minimap.sc-minimap .vue-flow__minimap-node {
+  fill: var(--color-accent-500);
+  fill-opacity: 0.4;
+  stroke: var(--color-accent-400);
+  stroke-width: 1;
+}
+
 @utility scrollbar-thin {
   &::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
   }
   &::-webkit-scrollbar-track {
     background: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    background: rgb(255 255 255 / 0.14);
+    background: var(--color-line-block);
+    border-radius: 2px;
   }
   &::-webkit-scrollbar-thumb:hover {
-    background: rgb(255 255 255 / 0.22);
+    background: var(--color-line-dashed);
   }
 }

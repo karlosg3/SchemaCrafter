@@ -21,21 +21,25 @@ interface PersistedUiState {
   showEnums: boolean
   showTypes: boolean
   editable: boolean
+  snapToGrid: boolean
+  showMinimap: boolean
 }
 
 const DEFAULTS: PersistedUiState = {
   activeDbId: null,
   activeSchemaId: null,
   viewLevel: 'tables',
-  railTab: 'databases',
+  railTab: 'tables',
   leftOpen: true,
   rightOpen: true,
   codeTarget: 'prisma',
-  // The four toggles behind the canvas gear popover.
+  // The toggles behind the canvas gear popover.
   showRelations: true,
   showEnums: true,
   showTypes: true,
-  editable: true
+  editable: true,
+  snapToGrid: true,
+  showMinimap: true
 }
 
 /**
@@ -63,6 +67,14 @@ function oneOf<T extends string>(allowed: readonly T[]) {
 export const useUiStore = defineStore('ui', () => {
   const state = reactive<PersistedUiState>({ ...DEFAULTS })
   const hydrated = ref(false)
+  /** Runtime-only flag reflecting unapplied edits in the RightSidebar code editor. */
+  const hasUnappliedCode = ref(false)
+  /** Transient canvas focus request triggered from the sidebar or command palette. */
+  const focusTargetId = ref<string | null>(null)
+  const focusEpoch = ref(0)
+  const commandPaletteOpen = ref(false)
+  const migrationDiffOpen = ref(false)
+  const welcomeOpen = ref(false)
 
   const workspaceStore = useWorkspaceStore()
 
@@ -157,8 +169,19 @@ export const useUiStore = defineStore('ui', () => {
     if (activeDbId.value) workspaceStore.updateDatabase(activeDbId.value, { engine: next })
   }
 
-  function toggleDisplay(key: 'showRelations' | 'showEnums' | 'showTypes' | 'editable'): void {
+  function toggleDisplay(
+    key: 'showRelations' | 'showEnums' | 'showTypes' | 'editable' | 'snapToGrid' | 'showMinimap'
+  ): void {
     state[key] = !state[key]
+  }
+
+  function setHasUnappliedCode(dirty: boolean): void {
+    hasUnappliedCode.value = dirty
+  }
+
+  function requestFocus(entityId: string): void {
+    focusTargetId.value = entityId
+    focusEpoch.value++
   }
 
   // ------------------------------------------------------------ persistence
@@ -180,7 +203,29 @@ export const useUiStore = defineStore('ui', () => {
     showRelations: isBoolean,
     showEnums: isBoolean,
     showTypes: isBoolean,
-    editable: isBoolean
+    editable: isBoolean,
+    snapToGrid: isBoolean,
+    showMinimap: isBoolean
+  }
+
+  const UI_SAVE_DEBOUNCE_MS = 200
+  let saveTimer: ReturnType<typeof setTimeout> | null = null
+
+  function flush(): void {
+    if (saveTimer !== null) {
+      clearTimeout(saveTimer)
+      saveTimer = null
+    }
+    if (!hydrated.value) return
+    saveUiState({ ...state })
+  }
+
+  function scheduleSave(snapshot: PersistedUiState): void {
+    if (saveTimer !== null) clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => {
+      saveTimer = null
+      saveUiState(snapshot)
+    }, UI_SAVE_DEBOUNCE_MS)
   }
 
   function hydrate(): void {
@@ -199,7 +244,7 @@ export const useUiStore = defineStore('ui', () => {
 
     watch(
       () => ({ ...state }),
-      snapshot => saveUiState(snapshot),
+      snapshot => scheduleSave(snapshot),
       { deep: true }
     )
   }
@@ -207,6 +252,12 @@ export const useUiStore = defineStore('ui', () => {
   return {
     state,
     hydrated,
+    hasUnappliedCode,
+    focusTargetId,
+    focusEpoch,
+    commandPaletteOpen,
+    migrationDiffOpen,
+    welcomeOpen,
 
     activeDbId,
     activeDatabase,
@@ -225,7 +276,10 @@ export const useUiStore = defineStore('ui', () => {
     setCodeTarget,
     setEngine,
     toggleDisplay,
+    setHasUnappliedCode,
+    requestFocus,
 
-    hydrate
+    hydrate,
+    flush
   }
 })

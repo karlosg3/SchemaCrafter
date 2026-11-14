@@ -1,4 +1,12 @@
 <script setup lang="ts">
+import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete'
+import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
+import { javascript } from '@codemirror/lang-javascript'
+import { MySQL, PostgreSQL, SQLite, sql } from '@codemirror/lang-sql'
+import { bracketMatching, foldGutter, foldKeymap, indentOnInput } from '@codemirror/language'
+import { openSearchPanel, search, searchKeymap } from '@codemirror/search'
+import type { Extension } from '@codemirror/state'
+import { Compartment, EditorState } from '@codemirror/state'
 import {
   EditorView,
   drawSelection,
@@ -8,33 +16,8 @@ import {
   keymap,
   lineNumbers
 } from '@codemirror/view'
-import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
-import { bracketMatching, indentOnInput } from '@codemirror/language'
-import { javascript } from '@codemirror/lang-javascript'
-import { MySQL, PostgreSQL, SQLite, sql } from '@codemirror/lang-sql'
-import { Compartment, EditorState } from '@codemirror/state'
-import type { Extension } from '@codemirror/state'
 import type { DatabaseEngine } from '#shared/types/schema'
 
-/**
- * CodeMirror 6 replaces the `<pre dangerouslySetInnerHTML>` plus transparent
- * `<textarea>` overlay the React app used. That arrangement needed a magic
- * `lineCount * 20 + 40` height and an `!important` alignment contract in CSS to
- * keep the two layers on top of each other (audit CE-1/2/6/7); line numbers and
- * bracket matching come free here instead.
- *
- * Mounted directly rather than through `vue-codemirror`: that wrapper builds
- * its initial EditorState from `[basicSetup]` and only appends the `extensions`
- * prop afterwards through a compartment, which left this component's theme and
- * `lineWrapping` inert while silently pulling in autocompletion, search and
- * lint that the panel does not use.
- *
- * The extension list is composed from the individual `@codemirror/*` packages
- * rather than the `codemirror` meta-package's `minimalSetup`. That package
- * bundles its own copies of the core modules, and a facet declared in one copy
- * does not unify with the same facet from another — which silently disabled
- * syntax highlighting for every language while leaving everything else working.
- */
 const props = defineProps<{
   modelValue: string
   language: string
@@ -42,7 +25,14 @@ const props = defineProps<{
   readonly?: boolean
 }>()
 
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+const emit = defineEmits<{
+  'update:modelValue': [value: string]
+  'update:lines': [lines: number]
+  dirty: []
+  apply: []
+}>()
+
+const EMIT_DEBOUNCE_MS = 100
 
 const DIALECT = {
   postgresql: PostgreSQL,
@@ -52,9 +42,34 @@ const DIALECT = {
 
 const host = useTemplateRef<HTMLDivElement>('host')
 let view: EditorView | null = null
+let emitTimer: ReturnType<typeof setTimeout> | null = null
 
-// Swapped in place on target/engine changes so the document, selection and
-// undo history survive; recreating the view would drop all three.
+function clearEmitTimer() {
+  if (emitTimer !== null) {
+    clearTimeout(emitTimer)
+    emitTimer = null
+  }
+}
+
+function getValue(): string {
+  return view ? view.state.doc.toString() : props.modelValue
+}
+
+function flush(): string {
+  clearEmitTimer()
+  const value = getValue()
+  if (value !== props.modelValue) emit('update:modelValue', value)
+  return value
+}
+
+function openSearch(): void {
+  if (!view) return
+  view.focus()
+  openSearchPanel(view)
+}
+
+defineExpose({ getValue, flush, openSearch })
+
 const languageCompartment = new Compartment()
 const readonlyCompartment = new Compartment()
 
@@ -71,39 +86,68 @@ onMounted(() => {
       doc: props.modelValue,
       extensions: [
         lineNumbers(),
+        foldGutter(),
         history(),
         drawSelection(),
         highlightSpecialChars(),
-        keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+        closeBrackets(),
+        search({ top: true }),
+        keymap.of([
+          {
+            key: 'Mod-Enter',
+            run: () => {
+              emit('apply')
+              return true
+            }
+          },
+          ...closeBracketsKeymap,
+          ...searchKeymap,
+          ...foldKeymap,
+          ...defaultKeymap,
+          ...historyKeymap,
+          indentWithTab
+        ]),
         highlightActiveLine(),
         highlightActiveLineGutter(),
         bracketMatching(),
         indentOnInput(),
-        // The panel is 440px wide by default; horizontal scrolling would hide
-        // the ends of most Prisma and Drizzle lines.
         EditorView.lineWrapping,
         EditorState.tabSize.of(2),
         codeEditorTheme,
         languageCompartment.of(languageExtension()),
         readonlyCompartment.of(EditorState.readOnly.of(!!props.readonly)),
         EditorView.updateListener.of((update) => {
-          if (update.docChanged) emit('update:modelValue', update.state.doc.toString())
+          if (!update.docChanged) return
+          emit('update:lines', update.state.doc.lines)
+          emit('dirty')
+          clearEmitTimer()
+          const nextDoc = update.state.doc
+          emitTimer = setTimeout(() => {
+            emitTimer = null
+            emit('update:modelValue', nextDoc.toString())
+          }, EMIT_DEBOUNCE_MS)
         })
       ]
     })
   })
+  if (view) emit('update:lines', view.state.doc.lines)
 })
 
 onBeforeUnmount(() => {
+  clearEmitTimer()
   view?.destroy()
   view = null
 })
 
-// Guarded: writing the value we just emitted back into the document would move
-// the caret to the end on every keystroke.
 watch(() => props.modelValue, (next) => {
-  if (!view || next === view.state.doc.toString()) return
+  if (!view) return
+  if (next === view.state.doc.toString()) {
+    emit('update:lines', view.state.doc.lines)
+    return
+  }
+  clearEmitTimer()
   view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: next } })
+  emit('update:lines', view.state.doc.lines)
 })
 
 watch([() => props.language, () => props.engine], () => {

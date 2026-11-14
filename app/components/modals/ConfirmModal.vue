@@ -12,11 +12,6 @@ withDefaults(defineProps<{
 })
 
 const open = defineModel<boolean>('open', { default: false })
-
-/**
- * Resolves the promise `useOverlay().open()` returns. The React app carried an
- * `onConfirm` closure around in app state to do the same thing (App.tsx:106).
- */
 const emit = defineEmits<{ close: [confirmed: boolean], 'after:leave': [] }>()
 
 const close = (confirmed: boolean) => emit('close', confirmed)
@@ -24,11 +19,26 @@ useModalDismiss(open, close, false)
 </script>
 
 <template>
-  <UModal v-model:open="open" :title="title" @after:leave="emit('after:leave')">
+  <UModal
+    v-model:open="open"
+    :title="title"
+    :ui="{ content: 'max-w-sm border border-line-chrome bg-surface-chrome' }"
+    @after:leave="emit('after:leave')"
+  >
     <template #body>
-      <p class="text-[12.5px] text-ink leading-relaxed">
-        {{ message }}
-      </p>
+      <div class="flex items-start gap-3">
+        <span
+          class="size-8 shrink-0 rounded-lg grid place-items-center border"
+          :class="color === 'error'
+            ? 'bg-red-500/10 border-red-500/25 text-red-400'
+            : 'bg-accent-500/10 border-accent-500/25 text-accent-400'"
+        >
+          <UIcon :name="color === 'error' ? 'i-ph-warning' : 'i-ph-info'" class="size-4" />
+        </span>
+        <p class="text-[12.5px] text-ink leading-relaxed pt-0.5">
+          {{ message }}
+        </p>
+      </div>
     </template>
 
     <template #footer>

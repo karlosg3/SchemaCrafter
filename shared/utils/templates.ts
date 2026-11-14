@@ -139,3 +139,111 @@ export const SAAS_TEMPLATE: DatabaseProject = {
     }
   ]
 };
+
+export const BLOG_TEMPLATE: DatabaseProject = {
+  id: 'template-blog',
+  name: 'Blog & CMS',
+  engine: 'postgresql',
+  schemas: [
+    { id: 'schema-blog', name: 'content', color: '#10b981', comment: 'Editorial posts, tags & discussions' }
+  ],
+  enums: [
+    { id: 'enum-post-status', name: 'PostStatus', values: ['draft', 'published', 'archived'], schemaId: 'schema-blog', position: { x: 1020, y: 100 } }
+  ],
+  tables: [
+    {
+      id: 'table-authors',
+      name: 'authors',
+      schemaId: 'schema-blog',
+      position: { x: 640, y: 100 },
+      color: '#6366f1',
+      columns: [
+        { id: 'au-1', name: 'id', type: 'UUID', isPrimaryKey: true, isNullable: false, isUnique: true, defaultValue: 'gen_random_uuid()' },
+        { id: 'au-2', name: 'handle', type: 'VARCHAR', length: 64, isPrimaryKey: false, isNullable: false, isUnique: true },
+        { id: 'au-3', name: 'display_name', type: 'VARCHAR', length: 120, isPrimaryKey: false, isNullable: false, isUnique: false },
+        { id: 'au-4', name: 'bio', type: 'TEXT', isPrimaryKey: false, isNullable: true, isUnique: false }
+      ]
+    },
+    {
+      id: 'table-posts',
+      name: 'posts',
+      schemaId: 'schema-blog',
+      position: { x: 360, y: 80 },
+      color: '#10b981',
+      indexes: [
+        { id: 'idx-posts-author-status', name: 'idx_posts_author_status', columnNames: ['author_id', 'status'], isUnique: false }
+      ],
+      columns: [
+        { id: 'po-1', name: 'id', type: 'UUID', isPrimaryKey: true, isNullable: false, isUnique: true, defaultValue: 'gen_random_uuid()' },
+        { id: 'po-2', name: 'author_id', type: 'UUID', isPrimaryKey: false, isNullable: false, isUnique: false, foreignKey: { targetTableId: 'table-authors', targetColumnId: 'au-1', onDelete: 'CASCADE' } },
+        { id: 'po-3', name: 'slug', type: 'VARCHAR', length: 160, isPrimaryKey: false, isNullable: false, isUnique: true },
+        { id: 'po-4', name: 'title', type: 'VARCHAR', length: 200, isPrimaryKey: false, isNullable: false, isUnique: false },
+        { id: 'po-5', name: 'body', type: 'TEXT', isPrimaryKey: false, isNullable: false, isUnique: false },
+        { id: 'po-6', name: 'status', type: 'ENUM', enumName: 'PostStatus', isPrimaryKey: false, isNullable: false, isUnique: false, defaultValue: 'draft' },
+        { id: 'po-7', name: 'published_at', type: 'TIMESTAMP', isPrimaryKey: false, isNullable: true, isUnique: false }
+      ]
+    },
+    {
+      id: 'table-tags',
+      name: 'tags',
+      schemaId: 'schema-blog',
+      position: { x: 640, y: 340 },
+      color: '#f59e0b',
+      columns: [
+        { id: 'tg-1', name: 'id', type: 'INT', isPrimaryKey: true, isNullable: false, isUnique: true, isAutoIncrement: true },
+        { id: 'tg-2', name: 'name', type: 'VARCHAR', length: 48, isPrimaryKey: false, isNullable: false, isUnique: true }
+      ]
+    },
+    {
+      id: 'table-post-tags',
+      name: 'post_tags',
+      schemaId: 'schema-blog',
+      position: { x: 80, y: 120 },
+      color: '#ec4899',
+      indexes: [
+        { id: 'idx-post-tags-unique', name: 'uq_post_tags_pair', columnNames: ['post_id', 'tag_id'], isUnique: true }
+      ],
+      columns: [
+        { id: 'pt-1', name: 'id', type: 'INT', isPrimaryKey: true, isNullable: false, isUnique: true, isAutoIncrement: true },
+        { id: 'pt-2', name: 'post_id', type: 'UUID', isPrimaryKey: false, isNullable: false, isUnique: false, foreignKey: { targetTableId: 'table-posts', targetColumnId: 'po-1', onDelete: 'CASCADE' } },
+        { id: 'pt-3', name: 'tag_id', type: 'INT', isPrimaryKey: false, isNullable: false, isUnique: false, foreignKey: { targetTableId: 'table-tags', targetColumnId: 'tg-1', onDelete: 'CASCADE' } }
+      ]
+    }
+  ]
+};
+
+export interface StarterTemplateMeta {
+  id: string
+  name: string
+  description: string
+  icon: string
+  engine: DatabaseProject['engine']
+  project: DatabaseProject
+}
+
+export const PROJECT_TEMPLATES: StarterTemplateMeta[] = [
+  {
+    id: 'ecommerce',
+    name: 'E-Commerce Platform',
+    description: 'Auth, product catalog, inventory, and orders across 3 PostgreSQL schemas.',
+    icon: 'i-ph-shopping-cart',
+    engine: 'postgresql',
+    project: ECOMMERCE_TEMPLATE
+  },
+  {
+    id: 'saas',
+    name: 'SaaS Multi-Tenant',
+    description: 'Users, organizations, Stripe customer billing, and plan tier enums.',
+    icon: 'i-ph-buildings',
+    engine: 'postgresql',
+    project: SAAS_TEMPLATE
+  },
+  {
+    id: 'blog',
+    name: 'Blog & CMS',
+    description: 'Authors, editorial posts with workflow status enum, and many-to-many tags.',
+    icon: 'i-ph-article',
+    engine: 'postgresql',
+    project: BLOG_TEMPLATE
+  }
+];

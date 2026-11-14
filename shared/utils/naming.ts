@@ -60,25 +60,23 @@ export function getSchemaName(project: DatabaseProject, schemaId: string): strin
 }
 
 /**
- * Raw SQL type string -> DataType. Was duplicated as `mapSqlTypeToDataType`
- * in sqlParser.ts and `mapRawTypeToDataType` in the now-deleted sqlImporter.ts.
+ * Raw SQL type string -> DataType.
  *
- * Note the ordering bug this preserves: the `INT` test runs before `BIGINT`,
- * so `BIGINT` is classified as `INT`. Left as-is deliberately — fixing it is
- * audit phase 4 and would silently change parse output before the round-trip
- * harness can catch the regression.
+ * Evaluates wider integer variants (`BIGINT`, `BIGSERIAL`, `INT8`) before
+ * `INT`/`SERIAL`, and MySQL `TINYINT(1)` before `INT`.
  */
 export function mapSqlTypeToDataType(rawType: string): DataType {
-  if (rawType.includes('INT') || rawType.includes('SERIAL')) return 'INT';
-  if (rawType.includes('BIGINT')) return 'BIGINT';
-  if (rawType.includes('CHAR') || rawType.includes('VARCHAR')) return 'VARCHAR';
-  if (rawType.includes('TEXT')) return 'TEXT';
-  if (rawType.includes('BOOL')) return 'BOOLEAN';
-  if (rawType.includes('UUID')) return 'UUID';
-  if (rawType.includes('DECIMAL') || rawType.includes('NUMERIC')) return 'DECIMAL';
-  if (rawType.includes('FLOAT') || rawType.includes('REAL') || rawType.includes('DOUBLE')) return 'FLOAT';
-  if (rawType.includes('TIME') || rawType.includes('TIMESTAMP')) return 'TIMESTAMP';
-  if (rawType.includes('DATE')) return 'DATE';
-  if (rawType.includes('JSON')) return 'JSON';
+  const upper = rawType.toUpperCase();
+  if (upper.includes('BIGINT') || upper.includes('BIGSERIAL') || upper === 'INT8') return 'BIGINT';
+  if (upper.includes('TINYINT(1)') || upper.includes('BOOL')) return 'BOOLEAN';
+  if (upper.includes('INT') || upper.includes('SERIAL')) return 'INT';
+  if (upper.includes('CHAR') || upper.includes('VARCHAR')) return 'VARCHAR';
+  if (upper.includes('TEXT')) return 'TEXT';
+  if (upper.includes('UUID')) return 'UUID';
+  if (upper.includes('DECIMAL') || upper.includes('NUMERIC')) return 'DECIMAL';
+  if (upper.includes('FLOAT') || upper.includes('REAL') || upper.includes('DOUBLE')) return 'FLOAT';
+  if (upper.includes('TIME') || upper.includes('TIMESTAMP')) return 'TIMESTAMP';
+  if (upper.includes('DATE')) return 'DATE';
+  if (upper.includes('JSON')) return 'JSON';
   return 'VARCHAR';
 }

@@ -52,6 +52,14 @@ export function generatePrismaSchema(project: DatabaseProject): string {
         }
       }
 
+      if (project.engine !== 'sqlite') {
+        if (col.type === 'VARCHAR' && col.length !== undefined) {
+          attributes.push(`@db.VarChar(${col.length})`);
+        } else if (col.type === 'DECIMAL' && (col.precision !== undefined || col.scale !== undefined)) {
+          attributes.push(`@db.Decimal(${col.precision ?? 10}, ${col.scale ?? 2})`);
+        }
+      }
+
       if (attributes.length > 0) {
         line += ` ${attributes.join(' ')}`;
       }

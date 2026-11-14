@@ -200,7 +200,7 @@ describe('geometry', () => {
       rows: [{ id: 'a', label: 'a' }, { id: 'b', label: 'b' }],
       rowHeight: BLOCK.rowHeight,
       addLabel: 'Add field'
-    })).toBe(40 + 2 * 32 + 34 + 4)
+    })).toBe(40 + 2 * 32 + 34 + BLOCK.borderWidth * 2)
   })
 
   it('keeps positions that were persisted and grids the rest', () => {

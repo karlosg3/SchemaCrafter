@@ -61,6 +61,11 @@ export function generateTypeOrmSchema(project: DatabaseProject): string {
         }
       } else {
         const colOpts: string[] = [];
+        if (col.type === 'VARCHAR' && col.length !== undefined) colOpts.push(`length: ${col.length}`);
+        if (col.type === 'DECIMAL' && (col.precision !== undefined || col.scale !== undefined)) {
+          colOpts.push(`precision: ${col.precision ?? 10}`);
+          colOpts.push(`scale: ${col.scale ?? 2}`);
+        }
         if (col.isNullable) colOpts.push('nullable: true');
         if (col.isUnique) colOpts.push('unique: true');
         if (col.defaultValue) colOpts.push(`default: '${col.defaultValue}'`);

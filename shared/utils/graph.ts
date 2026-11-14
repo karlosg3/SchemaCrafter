@@ -21,7 +21,7 @@ export const BLOCK = {
   rowHeight: 32,
   rowHeightEnum: 28,
   footerHeight: 34,
-  borderWidth: 2
+  borderWidth: 1
 } as const
 
 /** Grid fallback for entities that have never been dragged. Matches autoLayout. */
@@ -34,6 +34,8 @@ export interface BlockRow {
   sub?: string
   /** Pill, e.g. a column's data type. */
   badge?: string
+  /** Optional inline comment shown as a hint indicator on the row. */
+  comment?: string
   isPrimaryKey?: boolean
   /** Tables level only: the row exposes a pair of connection handles. */
   connectable?: boolean
@@ -58,6 +60,10 @@ export interface BlockNodeData {
   width: number
   /** Persisted resize override, when the user has dragged the handles. */
   size?: WH
+  /** Optional comment surfaced in the card header tooltip. */
+  comment?: string
+  /** Number of composite indexes defined on a table node. */
+  indexCount?: number
   /** Label for the dashed footer button; absent means no footer. */
   addLabel?: string
   /** Double-clicking drills one level in. */
@@ -177,6 +183,7 @@ function databasesGraph(ws: Workspace, options: GraphOptions): Graph {
         rowHeight: BLOCK.rowHeight,
         width: BLOCK.width,
         size: db.size,
+        ...(db.comment ? { comment: db.comment } : {}),
         addLabel: options.editable ? 'Add schema' : undefined,
         drillTo: { level: 'schemas', id: db.id },
         deletable: options.editable && ws.databases.length > 1,
@@ -219,6 +226,7 @@ function schemasGraph(ws: Workspace, options: GraphOptions): Graph {
         rowHeight: BLOCK.rowHeight,
         width: BLOCK.width,
         size: s.size,
+        ...(s.comment ? { comment: s.comment } : {}),
         addLabel: options.editable ? 'Add table' : undefined,
         drillTo: { level: 'tables', id: s.id },
         deletable: options.editable && s.tableIds.length === 0 && s.enumIds.length === 0,
@@ -270,6 +278,15 @@ function aggregateEdges(ws: Workspace, schemaIds: string[]): GraphEdge[] {
   })
 }
 
+function formatColumnBadge(col: Workspace['tables'][string]['columns'][number]): string {
+  if (col.type === 'ENUM' && col.enumName) return col.enumName
+  if (col.type === 'VARCHAR' && col.length !== undefined) return `VARCHAR(${col.length})`
+  if (col.type === 'DECIMAL' && (col.precision !== undefined || col.scale !== undefined)) {
+    return `DECIMAL(${col.precision ?? 10},${col.scale ?? 2})`
+  }
+  return col.type
+}
+
 function tablesGraph(ws: Workspace, options: GraphOptions): Graph {
   const schemaId = options.schemaId
   const s = schemaId ? ws.schemas[schemaId] : undefined
@@ -289,9 +306,8 @@ function tablesGraph(ws: Workspace, options: GraphOptions): Graph {
       rows: t.columns.map<BlockRow>(col => ({
         id: col.id,
         label: col.name,
-        badge: options.showTypes
-          ? (col.type === 'ENUM' && col.enumName ? col.enumName : col.type)
-          : undefined,
+        badge: options.showTypes ? formatColumnBadge(col) : undefined,
+        ...(col.comment ? { comment: col.comment } : {}),
         isPrimaryKey: col.isPrimaryKey,
         connectable: true,
         action: { kind: 'edit', target: 'column', id: col.id },
@@ -300,6 +316,8 @@ function tablesGraph(ws: Workspace, options: GraphOptions): Graph {
       rowHeight: BLOCK.rowHeight,
       width: BLOCK.width,
       size: t.size,
+      ...(t.comment ? { comment: t.comment } : {}),
+      ...(t.indexes?.length ? { indexCount: t.indexes.length } : {}),
       addLabel: options.editable ? 'Add field' : undefined,
       deletable: options.editable
     }
@@ -318,6 +336,7 @@ function tablesGraph(ws: Workspace, options: GraphOptions): Graph {
       rowHeight: BLOCK.rowHeightEnum,
       width: BLOCK.widthEnum,
       size: e.size,
+      ...(e.comment ? { comment: e.comment } : {}),
       addLabel: options.editable ? 'Add value' : undefined,
       deletable: options.editable
     }

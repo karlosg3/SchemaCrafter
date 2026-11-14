@@ -1,4 +1,5 @@
 import type { Table, Column, DataType, DatabaseProject, EnumDefinition } from '../types/schema';
+import { createId } from '../utils/ids';
 
 export function parsePrismaToProject(codeText: string, currentProject: DatabaseProject): DatabaseProject {
   // 1. Parse `enum EnumName { val1 val2 ... }`
@@ -20,7 +21,7 @@ export function parsePrismaToProject(codeText: string, currentProject: DatabaseP
       .filter((l) => l && !l.startsWith('//'));
 
     enums.push({
-      id: `enum-${enumName.toLowerCase()}-${Date.now()}`,
+      id: createId(`enum-${enumName.toLowerCase()}`),
       name: enumName,
       values,
       position: { x: enumX, y: enumY }
@@ -66,6 +67,11 @@ export function parsePrismaToProject(codeText: string, currentProject: DatabaseP
       const isEnumField = Boolean(matchingEnum);
 
       const type: DataType = isEnumField ? 'ENUM' : mapPrismaTypeToDataType(prismaTypeRaw);
+      const varcharMatch = type === 'VARCHAR' ? /@db\.VarChar\s*\(\s*(\d+)\s*\)/i.exec(line) : null;
+      const decimalMatch = type === 'DECIMAL' ? /@db\.Decimal\s*\(\s*(\d+)(?:\s*,\s*(\d+))?\s*\)/i.exec(line) : null;
+      const parsedLength = varcharMatch?.[1] ? Number.parseInt(varcharMatch[1], 10) : undefined;
+      const parsedPrecision = decimalMatch?.[1] ? Number.parseInt(decimalMatch[1], 10) : undefined;
+      const parsedScale = decimalMatch?.[2] !== undefined ? Number.parseInt(decimalMatch[2], 10) : undefined;
       const isPrimaryKey = line.includes('@id');
       const isNullable = parts[1]!.endsWith('?');
       const isUnique = line.includes('@unique');
@@ -80,6 +86,9 @@ export function parsePrismaToProject(codeText: string, currentProject: DatabaseP
         id: `${tableName}-col-${colIndex++}`,
         name: colName,
         type,
+        ...(parsedLength !== undefined && parsedLength > 0 ? { length: parsedLength } : {}),
+        ...(parsedPrecision !== undefined && parsedPrecision > 0 ? { precision: parsedPrecision } : {}),
+        ...(parsedScale !== undefined && parsedScale >= 0 ? { scale: parsedScale } : {}),
         enumName: isEnumField ? prismaTypeRaw : undefined,
         isPrimaryKey,
         isNullable: isPrimaryKey ? false : isNullable,

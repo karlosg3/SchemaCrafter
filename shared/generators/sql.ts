@@ -65,6 +65,9 @@ export function generateSqlDdl(project: DatabaseProject): string {
           if (col.foreignKey.onDelete) {
             fkStr += ` ON DELETE ${col.foreignKey.onDelete}`;
           }
+          if (col.foreignKey.onUpdate) {
+            fkStr += ` ON UPDATE ${col.foreignKey.onUpdate}`;
+          }
           constraints.push(fkStr);
         }
       }
@@ -90,9 +93,28 @@ export function generateSqlDdl(project: DatabaseProject): string {
       }
       sql += `\n`;
     }
+
+    const commentStatements: string[] = [];
+    if (engine === 'postgresql') {
+      if (table.comment?.trim()) {
+        commentStatements.push(`COMMENT ON TABLE ${schemaPrefix}"${table.name}" IS '${escapeSqlString(table.comment.trim())}';`);
+      }
+      for (const col of table.columns) {
+        if (col.comment?.trim()) {
+          commentStatements.push(`COMMENT ON COLUMN ${schemaPrefix}"${table.name}"."${col.name}" IS '${escapeSqlString(col.comment.trim())}';`);
+        }
+      }
+      if (commentStatements.length > 0) {
+        sql += `${commentStatements.join('\n')}\n\n`;
+      }
+    }
   }
 
   return sql.trim();
+}
+
+function escapeSqlString(val: string): string {
+  return val.replace(/'/g, "''");
 }
 
 function getSqlSchemaPrefix(project: DatabaseProject, schemaId?: string): string {
@@ -116,7 +138,7 @@ function mapSqlType(col: Column, engine: string): string {
     case 'BIGINT':
       return col.isAutoIncrement ? (engine === 'postgresql' ? 'BIGSERIAL' : 'BIGINT AUTO_INCREMENT') : 'BIGINT';
     case 'VARCHAR':
-      return 'VARCHAR(255)';
+      return `VARCHAR(${col.length ?? 255})`;
     case 'TEXT':
       return 'TEXT';
     case 'UUID':
@@ -124,7 +146,7 @@ function mapSqlType(col: Column, engine: string): string {
     case 'BOOLEAN':
       return engine === 'postgresql' ? 'BOOLEAN' : 'TINYINT(1)';
     case 'DECIMAL':
-      return 'NUMERIC(10, 2)';
+      return `NUMERIC(${col.precision ?? 10}, ${col.scale ?? 2})`;
     case 'FLOAT':
       return 'DOUBLE PRECISION';
     case 'TIMESTAMP':

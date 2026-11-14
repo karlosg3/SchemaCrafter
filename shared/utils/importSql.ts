@@ -43,11 +43,16 @@ export function mergeImportedSql(current: DatabaseProject, sql: string): SqlImpo
 
   const untouched = current.tables.filter(t => !importedNames.has(t.name))
 
+  // Merge any parsed CREATE TYPE ... AS ENUM definitions without dropping existing enums.
+  const importedEnumNames = new Set((parsed.enums ?? []).map(e => e.name))
+  const untouchedEnums = (current.enums ?? []).filter(e => !importedEnumNames.has(e.name))
+
   return {
     project: {
       ...current,
       // The parser folds any CREATE SCHEMA it saw into the existing set.
       schemas: parsed.schemas,
+      enums: [...untouchedEnums, ...(parsed.enums ?? []).filter(e => !untouchedEnums.some(u => u.id === e.id))],
       tables: [...untouched, ...imported]
     },
     added,

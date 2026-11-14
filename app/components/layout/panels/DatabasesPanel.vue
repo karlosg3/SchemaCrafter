@@ -29,7 +29,7 @@ const visible = computed(() =>
       :active="db.id === ui.activeDbId"
       :deletable="workspace.databases.length > 1"
       delete-hint="The last database cannot be deleted"
-      @select="ui.selectDatabase(db.id)"
+      @select="ui.selectDatabase(db.id); ui.requestFocus(db.id)"
       @edit="dialogs.editDatabase(db.id)"
       @remove="dialogs.remove('database', db.id)"
     />
