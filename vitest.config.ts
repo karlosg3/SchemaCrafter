@@ -34,7 +34,8 @@ export default defineConfig({
             'test/parsers.fixes.test.ts',
             'test/layout.test.ts',
             'test/exporters.test.ts',
-            'test/sqlDiff.test.ts'
+            'test/sqlDiff.test.ts',
+            'test/releaseMeta.test.ts'
           ]
         }
       },

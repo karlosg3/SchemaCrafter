@@ -1,0 +1,144 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release-desktop:
+    name: Verify, Build .deb & Publish Release
+    runs-on: ubuntu-24.04
+    env:
+      NUXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout repository with full tag history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve next release version and tag
+        id: meta
+        run: node .github/scripts/release-meta.mjs resolve
+
+      - name: Install Linux Tauri system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            pkg-config
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Run web lint, typecheck and unit tests
+        run: |
+          pnpm lint
+          pnpm typecheck
+          pnpm test
+
+      - name: Run Rust formatting, clippy and tests
+        run: |
+          mkdir -p .output/public
+          cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+          cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+          cargo test --manifest-path src-tauri/Cargo.toml
+
+      - name: Build Tauri Linux .deb bundle
+        run: |
+          pnpm tauri build \
+            --ci \
+            --bundles deb \
+            --config "{\"version\":\"${{ steps.meta.outputs.version }}\"}"
+
+      - name: Stage .deb package and generate SHA-256 checksums
+        shell: bash
+        run: |
+          mkdir -p release-assets
+          shopt -s nullglob
+          debs=(src-tauri/target/release/bundle/deb/*.deb)
+          if [ "${#debs[@]}" -eq 0 ]; then
+            echo "Expected at least one .deb artifact under src-tauri/target/release/bundle/deb/" >&2
+            exit 1
+          fi
+          cp "${debs[@]}" release-assets/
+          (cd release-assets && sha256sum *.deb > SHA256SUMS.txt)
+          ls -lh release-assets/
+
+      - name: Collect Netlify deployment URL and generate release notes
+        run: |
+          node .github/scripts/release-meta.mjs notes \
+            --tag "${{ steps.meta.outputs.tag }}" \
+            --version "${{ steps.meta.outputs.version }}" \
+            --sha "${{ github.sha }}" \
+            --assets-dir release-assets \
+            --out release-notes.md \
+            --site-id "${{ secrets.NETLIFY_SITE_ID || '7263f326-7edb-440b-8c01-1004443c47d8' }}"
+
+      - name: Create and push Git tag
+        if: steps.meta.outputs.tag_exists != 'true'
+        shell: bash
+        run: |
+          TAG="${{ steps.meta.outputs.tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            git tag -a "$TAG" "${{ github.sha }}" -m "Release ${TAG}"
+            git push origin "refs/tags/${TAG}"
+          fi
+
+      - name: Publish GitHub Release with .deb assets and Netlify URL
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.meta.outputs.tag }}"
+          shopt -s nullglob
+          assets=(release-assets/*)
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" \
+              --title "SchemaCrafter ${TAG}" \
+              --notes-file release-notes.md
+            gh release upload "$TAG" "${assets[@]}" --clobber
+          else
+            gh release create "$TAG" "${assets[@]}" \
+              --verify-tag \
+              --title "SchemaCrafter ${TAG}" \
+              --notes "$(<release-notes.md)" \
+              --generate-notes
+          fi
