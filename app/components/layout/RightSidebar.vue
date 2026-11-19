@@ -49,7 +49,7 @@ const SHORT_TARGET_LABELS: Record<ORMTarget, string> = {
 const STATUS = {
   synced: { label: 'Synced', dot: 'bg-sync-ok' },
   editing: { label: 'Editing', dot: 'bg-sync-pending' },
-  invalid: { label: 'Invalid', dot: 'bg-red-500' }
+  invalid: { label: 'Invalid', dot: 'bg-[#EC7484] [.light_&]:bg-[#A62C3E]' }
 } as const
 
 async function copy() {
@@ -118,9 +118,9 @@ function download() {
     </div>
 
     <!-- Segmented ORM Target Pills -->
-    <div class="shrink-0 px-2.5 py-2 border-b border-line-chrome bg-surface-raised/40">
+    <div class="shrink-0 px-2.5 py-2 border-b border-line-chrome bg-surface-chrome">
       <div
-        class="grid grid-cols-5 gap-1 rounded-lg bg-surface-root/60 p-1 border border-line-row"
+        class="grid grid-cols-5 gap-1 rounded-md bg-surface-root p-0.5 border border-line-row"
         role="tablist"
         aria-label="ORM target"
       >
@@ -130,11 +130,11 @@ function download() {
           type="button"
           role="tab"
           :aria-selected="ui.state.codeTarget === item.value"
-          class="rounded-md px-1.5 py-1 text-[11px] font-medium truncate transition-colors
+          class="rounded px-1.5 py-1 text-[11px] font-medium truncate border transition-colors
                  focus-visible:outline-2 focus-visible:outline-accent-500"
           :class="ui.state.codeTarget === item.value
-            ? 'bg-accent-500 text-white shadow-xs'
-            : 'text-ink-muted hover:text-ink-bright hover:bg-white/5'"
+            ? 'bg-surface-raised text-ink-bright border-accent-500/45 shadow-2xs [.light_&]:bg-surface-block [.light_&]:text-accent-700 [.light_&]:border-accent-600/35'
+            : 'border-transparent text-ink-muted hover:text-ink-bright hover:bg-surface-raised/50'"
           @click="void requestTargetChange(item.value)"
         >
           {{ SHORT_TARGET_LABELS[item.value] }}
@@ -161,15 +161,15 @@ function download() {
     <!-- Apply gate -->
     <div
       v-if="isDirty"
-      class="shrink-0 border-t border-line-chrome bg-surface-raised/60 px-3 py-2.5 space-y-2"
+      class="shrink-0 border-t border-line-chrome bg-surface-block/70 [.light_&]:bg-surface-raised px-3 py-2.5 space-y-2"
     >
-      <p v-if="problem" class="text-[11px] text-red-400 leading-snug">
+      <p v-if="problem" class="text-[11px] text-[#F28B97] [.light_&]:text-[#A62C3E] leading-snug">
         {{ problem }}
       </p>
-      <div v-else-if="diff" class="flex items-center justify-between text-[11px] font-mono">
+      <div v-else-if="diff" class="flex items-center justify-between text-[11px] font-mono tabular-nums">
         <span class="flex items-center gap-2">
-          <span v-if="diff.added.length" class="text-emerald-400 [.light_&]:text-emerald-700">+{{ diff.added.length }} added</span>
-          <span v-if="diff.removed.length" class="text-red-400">−{{ diff.removed.length }} removed</span>
+          <span v-if="diff.added.length" class="text-[#59C99B] [.light_&]:text-[#1B6B4A]">+{{ diff.added.length }} added</span>
+          <span v-if="diff.removed.length" class="text-[#EC7484] [.light_&]:text-[#A62C3E]">−{{ diff.removed.length }} removed</span>
           <span class="text-ink-dim">{{ diff.kept.length }} unchanged</span>
         </span>
         <kbd class="hidden sm:inline rounded border border-line-panel bg-surface-chrome px-1.5 py-0.5 text-[10px] text-ink-dim">
@@ -195,8 +195,8 @@ function download() {
         <span class="size-1.5 rounded-full" :class="STATUS[status].dot" />
         {{ STATUS[status].label }}
       </span>
-      <span class="text-[10.5px] text-ink-faint font-mono">{{ language }}</span>
-      <span class="text-[10.5px] text-ink-faint font-mono">{{ lineCount }} lines</span>
+      <span class="text-[10.5px] text-ink-dim font-mono">{{ language }}</span>
+      <span class="text-[10.5px] text-ink-dim font-mono tabular-nums">{{ lineCount }} lines</span>
 
       <div class="ml-auto flex items-center gap-1">
         <UTooltip :text="copiedRecently ? 'Copied!' : 'Copy code'">

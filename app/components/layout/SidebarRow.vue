@@ -27,9 +27,9 @@ const emit = defineEmits<{
   <div
     data-sidebar-row
     class="group flex items-center gap-1 pr-1 rounded-md border transition-colors
-           hover:bg-accent-500/6 focus-within:bg-accent-500/6"
+           hover:bg-surface-raised/80 focus-within:bg-surface-raised/80"
     :class="active
-      ? 'bg-accent-500/10 border-accent-500/30'
+      ? 'bg-surface-raised border-accent-500/40 [.light_&]:bg-surface-block [.light_&]:border-accent-600/35 [.light_&]:shadow-2xs'
       : 'border-transparent'"
   >
     <button
@@ -51,7 +51,7 @@ const emit = defineEmits<{
 
       <span
         v-if="count !== undefined"
-        class="rounded px-1.5 py-0.5 text-[10px] font-mono shrink-0 bg-surface-raised/80 text-ink-dim border border-line-row"
+        class="rounded px-1.5 py-0.5 text-[10px] font-mono tabular-nums shrink-0 bg-surface-root/65 [.light_&]:bg-surface-root text-ink-dim border border-line-row"
       >
         {{ count }}
       </span>
@@ -74,7 +74,7 @@ const emit = defineEmits<{
           size="xs"
           :aria-label="`Delete ${label}`"
           :disabled="!deletable"
-          class="hover:text-red-400"
+          class="hover:text-[#EC7484] [.light_&]:hover:text-[#A62C3E]"
           @click="emit('remove')"
         />
       </UTooltip>

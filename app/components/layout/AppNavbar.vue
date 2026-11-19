@@ -132,12 +132,7 @@ const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ??
       />
 
       <div class="flex items-center gap-2 min-w-0 pl-1">
-        <span
-          class="size-7 shrink-0 rounded-md grid place-items-center shadow-xs"
-          :style="{ background: 'linear-gradient(135deg, var(--color-accent-500), var(--color-accent-700))' }"
-        >
-          <UIcon name="i-ph-database" class="size-4 text-white" />
-        </span>
+        <BrandMark size-class="size-7" />
         <span class="font-semibold text-[13.5px] tracking-[0.2px] text-ink-bright truncate">
           SchemaCrafter
         </span>
@@ -146,7 +141,7 @@ const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ??
       <span class="hidden md:flex items-center gap-1.5 pl-2 text-ink-dim text-xs min-w-0">
         <template v-if="desktopDoc">
           <span
-            class="inline-flex items-center gap-1.5 rounded-md border border-line-panel bg-surface-raised/80 px-2 py-0.5 max-w-52"
+            class="inline-flex items-center gap-1.5 rounded-md border border-line-panel bg-surface-block/90 px-2 py-0.5 max-w-52"
             :title="desktopDoc.currentFilePath ?? 'Unsaved workspace'"
           >
             <UIcon name="i-ph-file-code" class="size-3.5 text-ink-dim shrink-0" />
@@ -168,7 +163,7 @@ const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ??
     <!-- Center: Workspace perspective switcher (Database / Modules / Endpoints) -->
     <nav
       aria-label="Workspace view"
-      class="inline-flex items-center gap-0.5 rounded-md border border-line-panel bg-surface-root/60 p-0.5 shrink-0"
+      class="inline-flex items-center gap-0.5 rounded-md border border-line-panel bg-surface-root/85 p-0.5 shrink-0"
     >
       <UTooltip
         v-for="mode in WORKSPACE_MODES"
@@ -178,23 +173,23 @@ const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ??
         <button
           type="button"
           :aria-pressed="ui.state.workspaceMode === mode.id"
-          class="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-[11.5px] font-medium transition-colors"
+          class="inline-flex items-center gap-1.5 rounded border px-2.5 py-1 text-[11.5px] font-medium transition-colors"
           :class="ui.state.workspaceMode === mode.id
-            ? 'bg-accent-500/18 text-accent-300 [.light_&]:text-accent-700 shadow-2xs'
-            : 'text-ink-muted hover:text-ink-bright'"
+            ? 'bg-accent-500/20 text-accent-300 border-accent-500/45 [.light_&]:bg-surface-block [.light_&]:text-accent-700 [.light_&]:border-accent-600/35 [.light_&]:shadow-2xs'
+            : 'border-transparent text-ink-muted hover:text-ink-bright'"
           @click="ui.setWorkspaceMode(mode.id)"
         >
           <UIcon :name="mode.icon" class="size-3.5 shrink-0" />
           <span class="hidden sm:inline">{{ mode.label }}</span>
           <span
             v-if="mode.id === 'modules' && modulesCount > 0"
-            class="hidden md:inline font-mono text-[9.5px] opacity-75"
+            class="hidden md:inline font-mono tabular-nums text-[9.5px] opacity-80"
           >
             {{ modulesCount }}
           </span>
           <span
             v-else-if="mode.id === 'endpoints' && endpointsCount > 0"
-            class="hidden md:inline font-mono text-[9.5px] opacity-75"
+            class="hidden md:inline font-mono tabular-nums text-[9.5px] opacity-80"
           >
             {{ endpointsCount }}
           </span>
@@ -207,12 +202,12 @@ const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ??
       <UTooltip text="Command Palette (Ctrl+K)">
         <button
           type="button"
-          class="hidden lg:inline-flex items-center gap-2 rounded-md border border-line-panel bg-surface-raised/65 px-2.5 py-1 text-[11.5px] text-ink-muted hover:text-ink-bright hover:border-accent-500/40 transition-colors"
+          class="hidden lg:inline-flex items-center gap-2 rounded-md border border-line-panel bg-surface-block/70 [.light_&]:bg-surface-block px-2.5 py-1 text-[11.5px] text-ink-muted hover:text-ink-bright hover:border-accent-500/45 transition-colors"
           @click="ui.commandPaletteOpen = true"
         >
           <UIcon name="i-ph-magnifying-glass" class="size-3.5 text-ink-dim" />
           <span>Search / Actions</span>
-          <kbd class="rounded border border-line-chrome bg-surface-chrome px-1 py-0.5 font-mono text-[9.5px] text-ink-faint">Ctrl+K</kbd>
+          <kbd class="rounded border border-line-panel bg-surface-chrome px-1.5 py-0.5 font-mono text-[9.5px] text-ink-dim">Ctrl+K</kbd>
         </button>
       </UTooltip>
 

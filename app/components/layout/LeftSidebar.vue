@@ -44,14 +44,14 @@ const heading = computed(() => {
     <!-- Icon rail -->
     <nav
       data-rail
-      class="w-13 shrink-0 flex flex-col items-center gap-1.5 py-2.5 border-r border-line-rail bg-surface-root/35"
+      class="w-13 shrink-0 flex flex-col items-center gap-1.5 py-2.5 border-r border-line-rail bg-surface-root"
       aria-label="Sidebar sections"
     >
       <UTooltip v-for="item in RAIL" :key="item.tab" :text="item.label" :content="{ side: 'right' }">
         <div class="relative w-full flex justify-center">
           <span
             v-if="ui.state.railTab === item.tab"
-            class="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r bg-accent-400"
+            class="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r bg-accent-400 [.light_&]:bg-accent-600"
           />
           <UButton
             :icon="item.icon"
@@ -66,10 +66,10 @@ const heading = computed(() => {
       </UTooltip>
 
       <div class="mt-auto flex flex-col items-center gap-0.5 pt-2 border-t border-line-rail w-8">
-        <span class="text-[9.5px] font-mono text-ink-dim" :title="`${workspace.databases.length} databases`">
+        <span class="text-[9.5px] font-mono tabular-nums text-ink-dim" :title="`${workspace.databases.length} databases`">
           {{ workspace.databases.length }}
         </span>
-        <span class="text-[8.5px] uppercase tracking-wider text-ink-faint">DB</span>
+        <span class="text-[8.5px] uppercase tracking-wider text-ink-dim">DB</span>
       </div>
     </nav>
 
@@ -85,7 +85,7 @@ const heading = computed(() => {
         <!-- Context bar -->
         <div
           v-if="ui.activeDatabase"
-          class="flex items-center gap-1 rounded-md border border-line-row bg-surface-raised/60 px-2 py-1 text-[10.5px] text-ink-dim truncate"
+          class="flex items-center gap-1 rounded-md border border-line-row bg-surface-block/75 [.light_&]:bg-surface-raised px-2 py-1 text-[10.5px] text-ink-dim truncate"
         >
           <button
             type="button"

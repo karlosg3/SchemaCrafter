@@ -292,15 +292,15 @@ const rightCollapsed = computed({
 
       <div
         v-if="isDesktop && isFileDragOver"
-        class="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-surface-root/80 backdrop-blur-sm"
+        class="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-surface-root/80 backdrop-blur-xs"
       >
-        <div class="rounded-lg border-2 border-dashed border-sky-400/70 bg-surface-raised/95 px-8 py-6 text-center shadow-2xl">
-          <UIcon name="i-lucide-file-up" class="mx-auto mb-2 size-8 text-sky-400" />
+        <div class="rounded-md border-2 border-dashed border-accent-500/75 [.light_&]:border-accent-600/75 bg-surface-block/95 px-8 py-6 text-center shadow-2xl">
+          <UIcon name="i-lucide-file-up" class="mx-auto mb-2 size-8 text-accent-400 [.light_&]:text-accent-600" />
           <p class="text-[14px] font-semibold text-ink-bright">
             Drop project file to open
           </p>
           <p class="mt-1 text-[12px] text-ink-muted">
-            Supports <code class="font-mono text-sky-300">.schemacrafter</code> and <code class="font-mono text-sky-300">.json</code>
+            Supports <code class="font-mono text-accent-300 [.light_&]:text-accent-700">.schemacrafter</code> and <code class="font-mono text-accent-300 [.light_&]:text-accent-700">.json</code>
           </p>
         </div>
       </div>

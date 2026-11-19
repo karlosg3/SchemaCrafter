@@ -17,10 +17,10 @@ const emit = defineEmits<{ add: [] }>()
     <div class="flex-1 min-h-0 overflow-y-auto scrollbar-thin px-2 space-y-0.5">
       <div
         v-if="isEmpty"
-        class="mx-1 my-4 rounded-lg border border-dashed border-line-panel bg-surface-raised/40 px-3 py-6 text-center"
+        class="mx-1 my-4 rounded-md border border-dashed border-line-panel bg-surface-raised/45 px-3 py-6 text-center"
       >
-        <UIcon name="i-ph-tray" class="mx-auto mb-1.5 size-5 text-ink-faint" />
-        <p class="text-[11.5px] text-ink-faint">
+        <UIcon name="i-ph-tray" class="mx-auto mb-1.5 size-5 text-ink-dim" />
+        <p class="text-[11.5px] text-ink-dim">
           {{ emptyMessage }}
         </p>
       </div>
@@ -31,7 +31,7 @@ const emit = defineEmits<{ add: [] }>()
       <button
         type="button"
         class="w-full h-8 rounded-md border border-dashed border-line-dashed text-[11.5px] font-medium
-               text-accent-400 hover:bg-accent-500/8 transition-colors
+               text-accent-300 [.light_&]:text-accent-700 hover:bg-accent-500/10 hover:border-accent-500/50 transition-colors
                disabled:opacity-40 disabled:hover:bg-transparent
                focus-visible:outline-2 focus-visible:outline-accent-500"
         :disabled="!canAdd"
