@@ -81,6 +81,7 @@
   --color-grid-minor: rgb(232 244 255 / 0.045);
   --color-grid-major: rgb(232 244 255 / 0.105);
   --color-canvas-dot: rgb(232 244 255 / 0.12);
+  --color-rel-active: #f57b47;
   --sc-block-shadow: 0 12px 28px -10px rgb(3 9 20 / 0.62), 0 2px 6px rgb(3 9 20 / 0.35);
   --sc-panel-bg: rgb(12 25 44 / 0.92);
 
@@ -145,6 +146,7 @@ html.light {
   --color-grid-minor: rgb(19 42 71 / 0.055);
   --color-grid-major: rgb(19 42 71 / 0.115);
   --color-canvas-dot: rgb(19 42 71 / 0.16);
+  --color-rel-active: #d64a25;
   --sc-block-shadow: 0 10px 24px -10px rgb(16 36 62 / 0.14), 0 1px 3px rgb(16 36 62 / 0.08);
   --sc-panel-bg: rgb(252 249 242 / 0.94);
 

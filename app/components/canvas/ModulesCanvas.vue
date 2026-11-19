@@ -167,7 +167,8 @@ async function onAutoLayout() {
       @edge-mouse-enter="hoveredEdgeId = $event.edge.id"
       @edge-mouse-leave="hoveredEdgeId = hoveredEdgeId === $event.edge.id ? null : hoveredEdgeId"
     >
-      <Background :gap="22" :size="1" pattern-color="var(--color-canvas-dot)" />
+      <Background id="mod-blueprint-minor" variant="lines" :gap="16" :line-width="1" color="var(--color-grid-minor)" />
+      <Background id="mod-blueprint-major" variant="lines" :gap="80" :line-width="1" color="var(--color-grid-major)" />
 
       <template #node-module="modProps">
         <ModuleBlockNode
@@ -200,7 +201,7 @@ async function onAutoLayout() {
     <!-- Top-left helper strip -->
     <div class="absolute top-3.5 left-3.5 z-10 flex items-center gap-2">
       <div class="sc-panel flex items-center gap-2 px-2.5 py-1.5 text-[11.5px] text-ink-muted">
-        <UIcon name="i-ph-cubes" class="size-3.5 text-accent-400" />
+        <UIcon name="i-ph-cubes" class="size-3.5 text-accent-400 [.light_&]:text-accent-600" />
         <span class="font-medium text-ink-bright">Modules ↔ Entities Map</span>
         <span class="text-line-panel">·</span>
         <span class="hidden sm:inline text-[11px] text-ink-dim">Drag handles to connect · Click line to unlink</span>
@@ -249,7 +250,7 @@ async function onAutoLayout() {
         />
         <button
           type="button"
-          class="px-1.5 text-[11px] font-mono text-ink-muted hover:text-ink-bright min-w-11"
+          class="px-1.5 text-[11px] font-mono tabular-nums text-ink-muted hover:text-ink-bright min-w-11"
           @click="fitAll"
         >
           {{ zoomPercent }}%
@@ -276,7 +277,7 @@ async function onAutoLayout() {
     <!-- Empty state -->
     <div v-if="isEmpty" class="absolute inset-0 grid place-items-center pointer-events-none px-4">
       <div class="pointer-events-auto sc-panel max-w-sm w-full p-6 text-center space-y-4">
-        <span class="mx-auto size-11 rounded-lg bg-accent-500/12 border border-accent-500/25 grid place-items-center text-accent-400">
+        <span class="mx-auto size-11 rounded-md bg-accent-500/14 border border-accent-500/30 grid place-items-center text-accent-400 [.light_&]:text-accent-600">
           <UIcon name="i-ph-cubes" class="size-5" />
         </span>
         <div class="space-y-1">

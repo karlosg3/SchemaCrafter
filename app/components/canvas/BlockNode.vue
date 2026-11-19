@@ -83,7 +83,7 @@ function onResizeEnd(event: { params: { width: number, height: number } }) {
     />
 
     <!-- Header -->
-    <div class="group/header flex items-center gap-2 shrink-0 h-[37px] px-2.5 border-b border-line-header bg-surface-raised/45">
+    <div class="group/header flex items-center gap-2 shrink-0 h-[37px] px-2.5 border-b border-line-header bg-surface-raised/85 [.light_&]:bg-surface-raised">
       <UIcon :name="KIND_ICON[data.kind]" class="size-3.5 shrink-0 text-ink-muted" />
       <span
         class="flex-1 min-w-0 font-semibold text-[12.5px] text-ink-bright truncate"
@@ -92,11 +92,11 @@ function onResizeEnd(event: { params: { width: number, height: number } }) {
         {{ data.name }}
       </span>
       <UTooltip v-if="data.comment" :text="data.comment">
-        <UIcon name="i-ph-note" class="size-3.5 shrink-0 text-ink-faint" />
+        <UIcon name="i-ph-note" class="size-3.5 shrink-0 text-ink-dim" />
       </UTooltip>
       <span
         v-if="data.indexCount"
-        class="shrink-0 rounded border border-emerald-400/35 bg-emerald-500/12 px-1.5 py-0.5 font-mono text-[9.5px] leading-none text-emerald-300 [.light_&]:text-emerald-700"
+        class="shrink-0 rounded border border-[#2A7B5B]/45 bg-[#2A7B5B]/16 px-1.5 py-0.5 font-mono tabular-nums text-[9.5px] leading-none text-[#68D3A8] [.light_&]:border-[#1C5941]/35 [.light_&]:bg-[#2A7B5B]/10 [.light_&]:text-[#1B6B4A]"
         title="Composite indexes"
       >
         {{ data.indexCount }} idx
@@ -104,7 +104,7 @@ function onResizeEnd(event: { params: { width: number, height: number } }) {
       <button
         v-if="data.kind === 'table' && data.endpointCount"
         type="button"
-        class="nodrag shrink-0 rounded border border-sky-400/35 bg-sky-500/12 px-1.5 py-0.5 font-mono text-[9.5px] leading-none text-sky-300 [.light_&]:text-sky-700 hover:bg-sky-500/22 transition-colors"
+        class="nodrag shrink-0 rounded border border-accent-500/40 bg-accent-500/14 px-1.5 py-0.5 font-mono tabular-nums text-[9.5px] leading-none text-accent-300 [.light_&]:border-accent-600/35 [.light_&]:bg-accent-600/10 [.light_&]:text-accent-700 hover:bg-accent-500/24 transition-colors"
         title="View linked API endpoints"
         @click.stop="emit('openEndpoints')"
       >
@@ -166,7 +166,7 @@ function onResizeEnd(event: { params: { width: number, height: number } }) {
             size="xs"
             :aria-label="`Delete ${data.name}`"
             :disabled="!data.deletable"
-            class="nodrag hover:text-red-400"
+            class="nodrag hover:text-[#EC7484] [.light_&]:hover:text-[#A62C3E]"
             @click.stop="emit('remove')"
           />
         </UTooltip>
@@ -207,7 +207,7 @@ function onResizeEnd(event: { params: { width: number, height: number } }) {
         </span>
 
         <UTooltip v-if="row.comment" :text="row.comment">
-          <UIcon name="i-ph-chat-text" class="size-3 shrink-0 text-ink-faint" />
+          <UIcon name="i-ph-chat-text" class="size-3 shrink-0 text-ink-dim" />
         </UTooltip>
 
         <span
@@ -216,7 +216,7 @@ function onResizeEnd(event: { params: { width: number, height: number } }) {
           :class="badgeToneClass(row.badge)"
         >{{ row.badge }}</span>
 
-        <span v-if="row.sub" class="shrink-0 text-[10px] font-mono text-ink-faint whitespace-nowrap">{{ row.sub }}</span>
+        <span v-if="row.sub" class="shrink-0 text-[10px] font-mono text-ink-dim whitespace-nowrap">{{ row.sub }}</span>
 
         <UTooltip
           v-if="editable && row.action?.kind === 'edit' && row.action.target === 'column'"
@@ -245,7 +245,7 @@ function onResizeEnd(event: { params: { width: number, height: number } }) {
             size="xs"
             :aria-label="`Delete ${row.label}`"
             :disabled="!row.deletable"
-            class="nodrag shrink-0 invisible group-hover/row:visible group-focus-within/row:visible hover:text-red-400"
+            class="nodrag shrink-0 invisible group-hover/row:visible group-focus-within/row:visible hover:text-[#EC7484] [.light_&]:hover:text-[#A62C3E]"
             @click.stop="emit('rowRemove', row)"
           />
         </UTooltip>
@@ -264,7 +264,7 @@ function onResizeEnd(event: { params: { width: number, height: number } }) {
       type="button"
       class="nodrag shrink-0 h-[34px] w-full flex items-center justify-center gap-1.5
              border-t border-line-row text-[11.5px] font-medium
-             text-accent-400 hover:bg-accent-500/8 transition-colors
+             text-accent-300 [.light_&]:text-accent-700 hover:bg-accent-500/10 transition-colors
              focus-visible:outline-2 focus-visible:outline-accent-500"
       @click.stop="emit('add')"
     >

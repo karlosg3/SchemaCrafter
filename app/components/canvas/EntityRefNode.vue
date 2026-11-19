@@ -18,10 +18,10 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="sc-block relative flex flex-col w-62 overflow-visible"
+    class="sc-block bg-[#122744]! [.light_&]:bg-[#F7F1E6]! relative flex flex-col w-62 overflow-visible"
     :class="[
       selected ? 'ring-2 ring-accent-500/75 border-accent-500!' : '',
-      data.linkedModuleCount === 0 ? 'opacity-75 hover:opacity-100' : ''
+      data.linkedModuleCount === 0 ? 'border-dashed! opacity-85 hover:opacity-100' : ''
     ]"
   >
     <!-- Left target handle accepting module -> entity links -->
@@ -75,7 +75,7 @@ const emit = defineEmits<{
         <UIcon
           v-else-if="col.isForeignKey"
           name="i-ph-link-simple"
-          class="size-3 shrink-0 text-accent-400"
+          class="size-3 shrink-0 text-accent-400 [.light_&]:text-accent-600"
         />
         <span v-else class="size-3 shrink-0" />
         <span class="flex-1 min-w-0 font-mono text-ink truncate">{{ col.name }}</span>
@@ -88,23 +88,23 @@ const emit = defineEmits<{
       </div>
       <div
         v-if="data.totalColumnCount > data.columns.length"
-        class="px-2.5 py-1 text-[10px] font-mono text-ink-faint"
+        class="px-2.5 py-1 text-[10px] font-mono tabular-nums text-ink-dim"
       >
         +{{ data.totalColumnCount - data.columns.length }} more columns
       </div>
     </div>
 
     <!-- Footer quick bridge -->
-    <div class="flex items-center justify-between gap-2 px-2.5 h-7 border-t border-line-header bg-surface-raised/30 rounded-b-[3px] text-[10px]">
+    <div class="flex items-center justify-between gap-2 px-2.5 h-7 border-t border-line-header bg-surface-raised/45 [.light_&]:bg-surface-raised/80 rounded-b-[3px] text-[10px]">
       <button
         v-if="data.endpointCount > 0"
         type="button"
-        class="nodrag font-mono text-accent-400 hover:underline"
+        class="nodrag font-mono tabular-nums text-accent-300 [.light_&]:text-accent-700 hover:underline"
         @click.stop="emit('openEndpoints')"
       >
         {{ data.endpointCount }} {{ data.endpointCount === 1 ? 'endpoint' : 'endpoints' }}
       </button>
-      <span v-else class="text-ink-faint font-mono">
+      <span v-else class="text-ink-dim font-mono">
         {{ data.linkedModuleCount > 0 ? 'Linked' : 'Unlinked' }}
       </span>
 
@@ -114,7 +114,7 @@ const emit = defineEmits<{
         class="nodrag inline-flex items-center gap-1 text-ink-muted hover:text-ink-bright transition-colors"
         @click.stop="emit('generateEndpoints')"
       >
-        <UIcon name="i-ph-sparkle" class="size-3 text-accent-400" />
+        <UIcon name="i-ph-sparkle" class="size-3 text-accent-400 [.light_&]:text-accent-600" />
         <span>+ API</span>
       </button>
     </div>

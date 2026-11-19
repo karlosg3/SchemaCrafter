@@ -48,9 +48,9 @@ const style = computed(() => {
   const dimmed = props.data?.dimmed
   return {
     stroke: highlighted && props.data?.kind === 'fk'
-      ? 'var(--color-accent-400)'
+      ? 'var(--color-rel-active)'
       : STROKE[props.data?.kind ?? 'fk'],
-    strokeWidth: highlighted ? baseWidth + 0.85 : baseWidth,
+    strokeWidth: highlighted ? baseWidth + 1 : baseWidth,
     opacity: dimmed ? 0.22 : 1,
     cursor: props.data?.kind === 'fk' ? 'pointer' : undefined,
     transition: 'opacity 140ms ease, stroke-width 140ms ease, stroke 140ms ease'

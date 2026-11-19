@@ -45,8 +45,8 @@ const hiddenCount = computed(() => Math.max(0, props.data.endpoints.length - 6))
     />
 
     <!-- Header -->
-    <div class="group/header flex items-center gap-2 h-10 px-2.5 border-b border-line-header bg-surface-raised/50">
-      <UIcon name="i-ph-cubes" class="size-3.5 shrink-0 text-accent-400" />
+    <div class="group/header flex items-center gap-2 h-10 px-2.5 border-b border-line-header bg-surface-raised/85 [.light_&]:bg-surface-raised">
+      <UIcon name="i-ph-cubes" class="size-3.5 shrink-0 text-accent-400 [.light_&]:text-accent-600" />
       <span class="flex-1 min-w-0 font-semibold text-[12.5px] text-ink-bright truncate">
         {{ data.name }}
       </span>
@@ -84,16 +84,16 @@ const hiddenCount = computed(() => Math.max(0, props.data.endpoints.length - 6))
           color="neutral"
           variant="ghost"
           size="xs"
-          class="nodrag hover:text-red-400"
+          class="nodrag hover:text-[#EC7484] [.light_&]:hover:text-[#A62C3E]"
           @click.stop="emit('remove')"
         />
       </span>
     </div>
 
     <!-- Description / metadata bar -->
-    <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 border-b border-line-row bg-surface-raised/20 text-[10.5px] text-ink-dim">
+    <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 border-b border-line-row bg-surface-raised/35 text-[10.5px] text-ink-dim">
       <span class="truncate">{{ data.description || 'Drag handle to link entities' }}</span>
-      <span class="shrink-0 font-mono text-[10px]">
+      <span class="shrink-0 font-mono tabular-nums text-[10px]">
         {{ data.tableCount }} {{ data.tableCount === 1 ? 'tbl' : 'tbls' }}
       </span>
     </div>
@@ -121,7 +121,7 @@ const hiddenCount = computed(() => Math.max(0, props.data.endpoints.length - 6))
 
       <div
         v-if="data.endpoints.length === 0"
-        class="px-2.5 py-3 text-center text-[11px] text-ink-faint"
+        class="px-2.5 py-3 text-center text-[11px] text-ink-dim"
       >
         No endpoints listed yet
       </div>
@@ -129,7 +129,7 @@ const hiddenCount = computed(() => Math.max(0, props.data.endpoints.length - 6))
       <button
         v-if="hiddenCount > 0"
         type="button"
-        class="nodrag w-full px-2.5 py-1 text-center font-mono text-[10.5px] text-accent-400 hover:bg-accent-500/8 transition-colors"
+        class="nodrag w-full px-2.5 py-1 text-center font-mono tabular-nums text-[10.5px] text-accent-300 [.light_&]:text-accent-700 hover:bg-accent-500/10 transition-colors"
         @click.stop="emit('openEndpoints')"
       >
         +{{ hiddenCount }} more — open catalog →
@@ -139,7 +139,7 @@ const hiddenCount = computed(() => Math.max(0, props.data.endpoints.length - 6))
     <!-- Footer actions -->
     <div
       v-if="data.editable"
-      class="flex items-center divide-x divide-line-row border-t border-line-header bg-surface-raised/35 rounded-b-[3px]"
+      class="flex items-center divide-x divide-line-row border-t border-line-header bg-surface-raised/65 [.light_&]:bg-surface-raised rounded-b-[3px]"
     >
       <button
         type="button"

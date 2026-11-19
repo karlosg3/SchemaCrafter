@@ -45,11 +45,11 @@ async function onAutoLayout() {
         v-for="item in LEVELS"
         :key="item.level"
         type="button"
-        class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11.5px] font-medium transition-colors
+        class="inline-flex items-center gap-1.5 rounded border px-2.5 py-1 text-[11.5px] font-medium transition-colors
                focus-visible:outline-2 focus-visible:outline-accent-500"
         :class="ui.state.viewLevel === item.level
-          ? 'bg-accent-500 text-white shadow-xs'
-          : 'text-ink-muted hover:text-ink-bright hover:bg-white/5'"
+          ? 'bg-accent-500/20 text-accent-300 border-accent-500/45 [.light_&]:bg-surface-block [.light_&]:text-accent-700 [.light_&]:border-accent-600/35 [.light_&]:shadow-2xs'
+          : 'border-transparent text-ink-muted hover:text-ink-bright hover:bg-surface-raised/60'"
         :aria-pressed="ui.state.viewLevel === item.level"
         @click="ui.setViewLevel(item.level)"
       >
@@ -59,7 +59,7 @@ async function onAutoLayout() {
     </div>
 
     <nav
-      class="flex items-center gap-1 rounded-md border border-line-chrome bg-surface-chrome/75 backdrop-blur-sm px-2 py-0.5 text-[11px] text-ink-dim"
+      class="flex items-center gap-1 rounded-md border border-line-panel bg-surface-chrome/90 backdrop-blur-xs px-2 py-0.5 text-[11px] text-ink-dim"
       aria-label="Breadcrumb"
     >
       <UButton
@@ -92,7 +92,7 @@ async function onAutoLayout() {
     <UTooltip text="Reset zoom & fit (Ctrl+0)">
       <button
         type="button"
-        class="px-1.5 text-[11px] font-mono text-ink-muted hover:text-ink-bright min-w-12 rounded-md
+        class="px-1.5 text-[11px] font-mono tabular-nums text-ink-muted hover:text-ink-bright min-w-12 rounded-md
                focus-visible:outline-2 focus-visible:outline-accent-500"
         aria-label="Fit view"
         @click="onFitView()"
@@ -162,7 +162,7 @@ async function onAutoLayout() {
           <label
             v-for="option in DISPLAY"
             :key="option.key"
-            class="flex items-center justify-between gap-3 rounded-md px-1.5 py-1 text-[12px] text-ink hover:bg-white/5 cursor-pointer"
+            class="flex items-center justify-between gap-3 rounded-md px-1.5 py-1 text-[12px] text-ink hover:bg-surface-raised/70 cursor-pointer"
           >
             <span class="flex items-center gap-2">
               <UIcon :name="option.icon" class="size-3.5 text-ink-dim" />

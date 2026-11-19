@@ -441,7 +441,8 @@ const emptyStateMeta = computed(() => {
     @edge-mouse-leave="hoveredEdgeId = hoveredEdgeId === $event.edge.id ? null : hoveredEdgeId"
     @connect="onConnect"
   >
-    <Background :gap="22" :size="1" pattern-color="var(--color-canvas-dot)" />
+    <Background id="db-blueprint-minor" variant="lines" :gap="16" :line-width="1" color="var(--color-grid-minor)" />
+    <Background id="db-blueprint-major" variant="lines" :gap="80" :line-width="1" color="var(--color-grid-major)" />
 
     <template #node-block="blockProps">
       <BlockNode
@@ -487,7 +488,7 @@ const emptyStateMeta = computed(() => {
       v-if="ui.state.editable && selectedBlockNodes.length >= 2"
       class="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 sc-panel flex items-center gap-0.5 p-1"
     >
-      <span class="px-2 text-[11px] font-mono text-ink-dim">
+      <span class="px-2 text-[11px] font-mono tabular-nums text-ink-dim">
         {{ selectedBlockNodes.length }} selected
       </span>
       <span class="w-px h-4 bg-line-panel mx-0.5" />
@@ -510,7 +511,7 @@ const emptyStateMeta = computed(() => {
 
     <div v-if="isEmpty" class="absolute inset-0 grid place-items-center pointer-events-none px-4">
       <div class="pointer-events-auto sc-panel max-w-sm w-full p-6 text-center space-y-4">
-        <span class="mx-auto size-11 rounded-lg bg-accent-500/12 border border-accent-500/25 grid place-items-center text-accent-400">
+        <span class="mx-auto size-11 rounded-md bg-accent-500/14 border border-accent-500/30 grid place-items-center text-accent-400 [.light_&]:text-accent-600">
           <UIcon :name="emptyStateMeta.icon" class="size-5" />
         </span>
         <div class="space-y-1">
