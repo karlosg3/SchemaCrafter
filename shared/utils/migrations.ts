@@ -1,11 +1,14 @@
 import type { DatabaseProject } from '../types/schema'
 import type {
+  EndpointEntity,
   EnumEntity,
+  ModuleEntity,
   SchemaEntity,
   TableEntity,
   Workspace
 } from '../types/workspace'
 import {
+  HTTP_METHODS,
   WORKSPACE_FORMAT_VERSION,
   emptyWorkspace,
   gradientFromColor
@@ -143,6 +146,7 @@ const VALID_DATA_TYPES = new Set([
 ])
 const VALID_FK_ACTIONS = new Set(['CASCADE', 'RESTRICT', 'SET NULL', 'NO ACTION'])
 const VALID_INDEX_TYPES = new Set(['BTREE', 'HASH', 'GIN', 'GIST'])
+const VALID_HTTP_METHODS = new Set<string>(HTTP_METHODS)
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every(v => typeof v === 'string')
@@ -222,6 +226,7 @@ export function isValidWorkspace(value: unknown): value is Workspace {
     if (typeof db.engine !== 'string' || !VALID_ENGINES.has(db.engine)) return false
     if (!isGradient(db.gradient)) return false
     if (!isStringArray(db.schemaIds)) return false
+    if (db.moduleIds !== undefined && !isStringArray(db.moduleIds)) return false
     if (db.position !== undefined && !isXY(db.position)) return false
     if (db.size !== undefined && !isWH(db.size)) return false
     if (db.comment !== undefined && typeof db.comment !== 'string') return false
@@ -259,6 +264,31 @@ export function isValidWorkspace(value: unknown): value is Workspace {
     if (enumEntity.position !== undefined && !isXY(enumEntity.position)) return false
     if (enumEntity.size !== undefined && !isWH(enumEntity.size)) return false
     if (enumEntity.comment !== undefined && typeof enumEntity.comment !== 'string') return false
+  }
+
+  if (value.modules !== undefined) {
+    if (!isObject(value.modules)) return false
+    for (const mod of Object.values(value.modules as Record<string, unknown>)) {
+      if (!isObject(mod)) return false
+      if (typeof mod.id !== 'string' || typeof mod.dbId !== 'string' || typeof mod.name !== 'string') return false
+      if (typeof mod.basePath !== 'string') return false
+      if (!isGradient(mod.gradient)) return false
+      if (!isStringArray(mod.tableIds) || !isStringArray(mod.endpointIds)) return false
+      if (mod.description !== undefined && typeof mod.description !== 'string') return false
+      if (mod.position !== undefined && !isXY(mod.position)) return false
+      if (mod.size !== undefined && !isWH(mod.size)) return false
+    }
+  }
+
+  if (value.endpoints !== undefined) {
+    if (!isObject(value.endpoints)) return false
+    for (const ep of Object.values(value.endpoints as Record<string, unknown>)) {
+      if (!isObject(ep)) return false
+      if (typeof ep.id !== 'string' || typeof ep.moduleId !== 'string') return false
+      if (typeof ep.method !== 'string' || !VALID_HTTP_METHODS.has(ep.method)) return false
+      if (typeof ep.path !== 'string' || typeof ep.description !== 'string') return false
+      if (!isStringArray(ep.tableIds)) return false
+    }
   }
 
   return true
@@ -335,14 +365,88 @@ export function reconcileWorkspace(ws: Workspace): Workspace {
     if (changed) tables[table.id] = { ...table, columns }
   }
 
+  const dbIds = new Set(ws.databases.map(db => db.id))
+  const tableDbById = new Map<string, string>()
+  for (const table of Object.values(tables)) {
+    const schema = schemas[table.schemaId]
+    if (schema) tableDbById.set(table.id, schema.dbId)
+  }
+
+  // Reconcile modules and endpoints: drop orphans, prune missing tables, and keep module.tableIds
+  // a superset of its endpoints' tableIds.
+  const modules: Record<string, ModuleEntity> = {}
+  for (const mod of Object.values(ws.modules ?? {})) {
+    if (!dbIds.has(mod.dbId)) continue
+    const validTables = [...new Set(mod.tableIds.filter(id => tableDbById.get(id) === mod.dbId))]
+    modules[mod.id] = {
+      ...mod,
+      tableIds: validTables,
+      endpointIds: [...new Set(mod.endpointIds)]
+    }
+  }
+
+  const endpoints: Record<string, EndpointEntity> = {}
+  for (const ep of Object.values(ws.endpoints ?? {})) {
+    const parentMod = modules[ep.moduleId]
+    if (!parentMod) continue
+    const validTables = [...new Set(ep.tableIds.filter(id => tableDbById.get(id) === parentMod.dbId))]
+    endpoints[ep.id] = {
+      ...ep,
+      tableIds: validTables
+    }
+  }
+
+  for (const mod of Object.values(modules)) {
+    const keptEndpoints = mod.endpointIds.filter(id => endpoints[id]?.moduleId === mod.id)
+    const tableSet = new Set(mod.tableIds)
+    for (const epId of keptEndpoints) {
+      for (const tId of endpoints[epId]!.tableIds) tableSet.add(tId)
+    }
+    modules[mod.id] = {
+      ...mod,
+      endpointIds: keptEndpoints,
+      tableIds: [...tableSet]
+    }
+  }
+
+  // Adopt any endpoint whose parent module forgot to list it.
+  for (const ep of Object.values(endpoints)) {
+    const parentMod = modules[ep.moduleId]!
+    const nextTableIds = new Set(parentMod.tableIds)
+    for (const tId of ep.tableIds) nextTableIds.add(tId)
+    const nextEndpointIds = parentMod.endpointIds.includes(ep.id)
+      ? parentMod.endpointIds
+      : [...parentMod.endpointIds, ep.id]
+    modules[ep.moduleId] = {
+      ...parentMod,
+      endpointIds: nextEndpointIds,
+      tableIds: [...nextTableIds]
+    }
+  }
+
+  const databases = ws.databases.map((db) => {
+    const existingIds = (db.moduleIds ?? []).filter(id => modules[id]?.dbId === db.id)
+    const seen = new Set(existingIds)
+    for (const mod of Object.values(modules)) {
+      if (mod.dbId === db.id && !seen.has(mod.id)) {
+        existingIds.push(mod.id)
+        seen.add(mod.id)
+      }
+    }
+    return {
+      ...db,
+      schemaIds: db.schemaIds.filter(id => schemas[id]),
+      ...(existingIds.length > 0 || db.moduleIds !== undefined ? { moduleIds: existingIds } : {})
+    }
+  })
+
   return {
     ...ws,
-    databases: ws.databases.map(db => ({
-      ...db,
-      schemaIds: db.schemaIds.filter(id => schemas[id])
-    })),
+    databases,
     schemas,
     tables,
-    enums
+    enums,
+    modules,
+    endpoints
   }
 }

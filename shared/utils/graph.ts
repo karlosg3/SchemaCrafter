@@ -64,6 +64,8 @@ export interface BlockNodeData {
   comment?: string
   /** Number of composite indexes defined on a table node. */
   indexCount?: number
+  /** Number of API endpoints linked to a table node. */
+  endpointCount?: number
   /** Label for the dashed footer button; absent means no footer. */
   addLabel?: string
   /** Double-clicking drills one level in. */
@@ -295,33 +297,44 @@ function tablesGraph(ws: Workspace, options: GraphOptions): Graph {
   const tables = s.tableIds.map(id => ws.tables[id]).filter(t => !!t)
   const enums = options.showEnums ? s.enumIds.map(id => ws.enums[id]).filter(e => !!e) : []
 
-  const tableNodes = tables.map<GraphNode>((t, index) => ({
-    id: t.id,
-    type: 'block',
-    position: t.position ?? fallbackPosition(index),
-    data: {
-      kind: 'table',
-      name: t.name,
-      gradient: t.gradient,
-      rows: t.columns.map<BlockRow>(col => ({
-        id: col.id,
-        label: col.name,
-        badge: options.showTypes ? formatColumnBadge(col) : undefined,
-        ...(col.comment ? { comment: col.comment } : {}),
-        isPrimaryKey: col.isPrimaryKey,
-        connectable: true,
-        action: { kind: 'edit', target: 'column', id: col.id },
-        deletable: options.editable
-      })),
-      rowHeight: BLOCK.rowHeight,
-      width: BLOCK.width,
-      size: t.size,
-      ...(t.comment ? { comment: t.comment } : {}),
-      ...(t.indexes?.length ? { indexCount: t.indexes.length } : {}),
-      addLabel: options.editable ? 'Add field' : undefined,
-      deletable: options.editable
+  const endpointCountByTable = new Map<string, number>()
+  for (const ep of Object.values(ws.endpoints ?? {})) {
+    for (const tableId of ep.tableIds) {
+      endpointCountByTable.set(tableId, (endpointCountByTable.get(tableId) ?? 0) + 1)
     }
-  }))
+  }
+
+  const tableNodes = tables.map<GraphNode>((t, index) => {
+    const endpointCount = endpointCountByTable.get(t.id) ?? 0
+    return {
+      id: t.id,
+      type: 'block',
+      position: t.position ?? fallbackPosition(index),
+      data: {
+        kind: 'table',
+        name: t.name,
+        gradient: t.gradient,
+        rows: t.columns.map<BlockRow>(col => ({
+          id: col.id,
+          label: col.name,
+          badge: options.showTypes ? formatColumnBadge(col) : undefined,
+          ...(col.comment ? { comment: col.comment } : {}),
+          isPrimaryKey: col.isPrimaryKey,
+          connectable: true,
+          action: { kind: 'edit', target: 'column', id: col.id },
+          deletable: options.editable
+        })),
+        rowHeight: BLOCK.rowHeight,
+        width: BLOCK.width,
+        size: t.size,
+        ...(t.comment ? { comment: t.comment } : {}),
+        ...(t.indexes?.length ? { indexCount: t.indexes.length } : {}),
+        ...(endpointCount > 0 ? { endpointCount } : {}),
+        addLabel: options.editable ? 'Add field' : undefined,
+        deletable: options.editable
+      }
+    }
+  })
 
   const enumNodes = enums.map<GraphNode>((e, index) => ({
     id: e.id,

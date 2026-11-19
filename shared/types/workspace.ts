@@ -42,6 +42,10 @@ export const DEFAULT_GRADIENT: Gradient = ['#64748b', '#475569']
 /** refactor-plan.md:80 locks enums to red — they are not user-recolourable. */
 export const ENUM_GRADIENT: Gradient = ['#ef4444', '#b91c1c']
 
+export const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const
+
+export type HttpMethod = (typeof HTTP_METHODS)[number]
+
 export interface DatabaseEntity {
   id: string
   name: string
@@ -49,6 +53,8 @@ export interface DatabaseEntity {
   gradient: Gradient
   /** Ordered — drives both the sidebar list and the block's row order. */
   schemaIds: string[]
+  /** Ordered API modules belonging to this database. */
+  moduleIds?: string[]
   position?: XY
   size?: WH
   comment?: string
@@ -94,6 +100,32 @@ export interface EnumEntity {
   comment?: string
 }
 
+export interface ModuleEntity {
+  id: string
+  dbId: string
+  name: string
+  /** Optional base URL prefix for the module, e.g. `/users` or `/api/orders`. */
+  basePath: string
+  description?: string
+  gradient: Gradient
+  /** Ordered linked table ids across any schema in the same database. */
+  tableIds: string[]
+  /** Ordered endpoint ids belonging to this module. */
+  endpointIds: string[]
+  position?: XY
+  size?: WH
+}
+
+export interface EndpointEntity {
+  id: string
+  moduleId: string
+  method: HttpMethod
+  path: string
+  description: string
+  /** Concrete tables touched by this endpoint (subset kept synced with parent module.tableIds). */
+  tableIds: string[]
+}
+
 export const WORKSPACE_FORMAT_VERSION = 2 as const
 
 export interface Workspace {
@@ -103,6 +135,8 @@ export interface Workspace {
   schemas: Record<string, SchemaEntity>
   tables: Record<string, TableEntity>
   enums: Record<string, EnumEntity>
+  modules?: Record<string, ModuleEntity>
+  endpoints?: Record<string, EndpointEntity>
 }
 
 export function emptyWorkspace(): Workspace {
@@ -111,7 +145,9 @@ export function emptyWorkspace(): Workspace {
     databases: [],
     schemas: {},
     tables: {},
-    enums: {}
+    enums: {},
+    modules: {},
+    endpoints: {}
   }
 }
 

@@ -35,7 +35,8 @@ export default defineConfig({
             'test/layout.test.ts',
             'test/exporters.test.ts',
             'test/sqlDiff.test.ts',
-            'test/releaseMeta.test.ts'
+            'test/releaseMeta.test.ts',
+            'test/apiDesign.test.ts'
           ]
         }
       },
