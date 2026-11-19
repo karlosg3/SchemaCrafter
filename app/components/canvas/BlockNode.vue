@@ -30,6 +30,8 @@ const emit = defineEmits<{
   rowRemove: [row: BlockRow]
   resizeEnd: [size: { width: number, height: number }]
   resetSize: []
+  openEndpoints: []
+  generateEndpoints: []
 }>()
 
 const KIND_ICON: Record<BlockKind, string> = {
@@ -99,7 +101,27 @@ function onResizeEnd(event: { params: { width: number, height: number } }) {
       >
         {{ data.indexCount }} idx
       </span>
+      <button
+        v-if="data.kind === 'table' && data.endpointCount"
+        type="button"
+        class="nodrag shrink-0 rounded border border-sky-400/35 bg-sky-500/12 px-1.5 py-0.5 font-mono text-[9.5px] leading-none text-sky-300 [.light_&]:text-sky-700 hover:bg-sky-500/22 transition-colors"
+        title="View linked API endpoints"
+        @click.stop="emit('openEndpoints')"
+      >
+        {{ data.endpointCount }} api
+      </button>
       <span class="flex items-center gap-0.5 shrink-0 invisible group-hover/header:visible group-focus-within/header:visible">
+        <UTooltip v-if="editable && data.kind === 'table'" text="Generate / add API endpoints">
+          <UButton
+            icon="i-ph-plugs-connected"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            :aria-label="`Generate endpoints for ${data.name}`"
+            class="nodrag"
+            @click.stop="emit('generateEndpoints')"
+          />
+        </UTooltip>
         <UTooltip v-if="editable && data.kind === 'table'" text="Duplicate table">
           <UButton
             icon="i-ph-copy"

@@ -22,6 +22,7 @@ const workspace = useWorkspaceStore()
 const toast = useToast()
 const confirm = useConfirm()
 const dialogs = useEntityDialogs()
+const apiDialogs = useApiDialogs()
 
 /** Prototype zoom clamps. */
 const MIN_ZOOM = 0.4
@@ -458,6 +459,8 @@ const emptyStateMeta = computed(() => {
         @row-remove="row => onRowRemove(nodeById(blockProps.id)!, row)"
         @resize-end="size => onResizeEnd(nodeById(blockProps.id)!, size)"
         @reset-size="onResetSize(nodeById(blockProps.id)!)"
+        @open-endpoints="ui.openEndpointsForTable(blockProps.id)"
+        @generate-endpoints="apiDialogs.generateEndpointsForTable(blockProps.id)"
       />
     </template>
 

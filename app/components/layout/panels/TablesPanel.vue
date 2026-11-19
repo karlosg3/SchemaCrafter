@@ -31,7 +31,7 @@ const visible = computed(() =>
       :gradient="t.gradient"
       :count="t.columns.length"
       :active="ui.focusTargetId === t.id"
-      @select="ui.drillInto('tables', t.schemaId); ui.requestFocus(t.id)"
+      @select="ui.openTableInDatabase(t.id)"
       @edit="dialogs.editTable(t.id)"
       @remove="dialogs.remove('table', t.id)"
     />

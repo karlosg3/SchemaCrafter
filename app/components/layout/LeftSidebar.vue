@@ -6,6 +6,7 @@ import DatabasesPanel from './panels/DatabasesPanel.vue'
 import SchemasPanel from './panels/SchemasPanel.vue'
 import TablesPanel from './panels/TablesPanel.vue'
 import EnumsPanel from './panels/EnumsPanel.vue'
+import ModulesPanel from './panels/ModulesPanel.vue'
 
 const ui = useUiStore()
 const workspace = useWorkspaceStore()
@@ -14,14 +15,16 @@ const RAIL: { tab: RailTab, icon: string, label: string }[] = [
   { tab: 'databases', icon: 'i-ph-database', label: 'Databases' },
   { tab: 'schemas', icon: 'i-ph-folders', label: 'Schemas' },
   { tab: 'tables', icon: 'i-ph-table', label: 'Tables' },
-  { tab: 'enums', icon: 'i-ph-list-bullets', label: 'Enums' }
+  { tab: 'enums', icon: 'i-ph-list-bullets', label: 'Enums' },
+  { tab: 'modules', icon: 'i-ph-cubes', label: 'Modules' }
 ]
 
 const PANELS = {
   databases: DatabasesPanel,
   schemas: SchemasPanel,
   tables: TablesPanel,
-  enums: EnumsPanel
+  enums: EnumsPanel,
+  modules: ModulesPanel
 } as const
 
 const search = ref('')
@@ -31,6 +34,7 @@ const heading = computed(() => {
   const tab = ui.state.railTab
   if (tab === 'databases') return 'Databases'
   if (tab === 'schemas') return 'Schemas'
+  if (tab === 'modules') return 'API Modules'
   return tab === 'tables' ? 'Tables' : 'Enums'
 })
 </script>
@@ -90,7 +94,7 @@ const heading = computed(() => {
           >
             {{ ui.activeDatabase.name }}
           </button>
-          <template v-if="ui.state.railTab !== 'databases' && ui.activeSchema">
+          <template v-if="ui.state.railTab !== 'databases' && ui.state.railTab !== 'modules' && ui.activeSchema">
             <span class="text-line-panel shrink-0">/</span>
             <button
               type="button"
