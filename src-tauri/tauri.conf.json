@@ -32,18 +32,41 @@
     "shortDescription": "Visual database schema designer",
     "icon": [
       "icons/32x32.png",
+      "icons/64x64.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
+      "icons/icon.png",
       "icons/icon.icns",
       "icons/icon.ico"
     ],
     "fileAssociations": [
       {
         "ext": ["schemacrafter"],
-        "mimeType": "application/json",
+        "mimeType": "application/x-schemacrafter",
         "name": "SchemaCrafter Project",
-        "description": "SchemaCrafter database workspace file"
+        "description": "SchemaCrafter database workspace file",
+        "role": "Editor",
+        "exportedType": {
+          "identifier": "com.karlosg3.schemacrafter.project",
+          "conformsTo": ["public.json", "public.data"]
+        }
       }
-    ]
+    ],
+    "linux": {
+      "deb": {
+        "files": {
+          "/usr/share/mime/packages/schemacrafter.xml": "linux/schemacrafter-mime.xml",
+          "/usr/share/icons/hicolor/32x32/mimetypes/application-x-schemacrafter.png": "icons/32x32.png",
+          "/usr/share/icons/hicolor/64x64/mimetypes/application-x-schemacrafter.png": "icons/64x64.png",
+          "/usr/share/icons/hicolor/128x128/mimetypes/application-x-schemacrafter.png": "icons/128x128.png",
+          "/usr/share/icons/hicolor/256x256/mimetypes/application-x-schemacrafter.png": "icons/128x128@2x.png",
+          "/usr/share/icons/hicolor/512x512/mimetypes/application-x-schemacrafter.png": "icons/icon.png",
+          "/usr/share/icons/hicolor/scalable/mimetypes/application-x-schemacrafter.svg": "icons/schemacrafter-blueprint.svg",
+          "/usr/share/icons/hicolor/scalable/apps/schemacrafter.svg": "icons/schemacrafter-blueprint.svg"
+        },
+        "postInstallScript": "linux/postinst.sh",
+        "postRemoveScript": "linux/postrm.sh"
+      }
+    }
   }
 }

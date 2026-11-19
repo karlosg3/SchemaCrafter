@@ -2,6 +2,7 @@
 import type { RecentFileEntry, RecoveryDraftResult } from '~/desktop/session'
 import { useDesktopDocumentStore } from '~/stores/desktopDocument'
 import { LEFT_WIDTH, RIGHT_WIDTH, useUiStore } from '~/stores/ui'
+import { useUpdaterStore } from '~/stores/updater'
 import { useWorkspaceStore } from '~/stores/workspace'
 
 // ssr:false means this only ever runs in the browser, but hydration stays an
@@ -14,6 +15,7 @@ const actions = useWorkspaceActions()
 const isDesktop = isDesktopApp()
 const desktopDoc = isDesktop ? useDesktopDocumentStore() : null
 const desktopActions = isDesktop ? useDesktopDocumentActions() : null
+const updater = isDesktop ? useUpdaterStore() : null
 
 const recentFiles = ref<RecentFileEntry[]>([])
 const recoveryDraft = ref<RecoveryDraftResult | null>(null)
@@ -23,6 +25,7 @@ let unlistenDragDrop: (() => void) | null = null
 let unlistenClose: (() => void) | null = null
 let closePromptOpen = false
 let recoveryTimer: ReturnType<typeof setTimeout> | null = null
+let updateCheckTimer: ReturnType<typeof setTimeout> | null = null
 const isFileDragOver = ref(false)
 
 async function refreshDesktopSessionMeta() {
@@ -195,6 +198,28 @@ onMounted(async () => {
   } catch (error) {
     console.error('Failed to attach desktop close guard:', error)
   }
+
+  if (updater) {
+    updateCheckTimer = setTimeout(async () => {
+      updateCheckTimer = null
+      const result = await updater.checkForUpdates({ silent: true })
+      if (result?.updateAvailable && updater.shouldNotify) {
+        toast.add({
+          title: `SchemaCrafter ${result.tag} available`,
+          description: `You are running v${result.currentVersion}. Click Update to upgrade.`,
+          color: 'primary',
+          actions: [
+            {
+              label: 'View update',
+              color: 'primary',
+              variant: 'soft',
+              onClick: () => { updater.openModal() }
+            }
+          ]
+        })
+      }
+    }, 3500)
+  }
 })
 
 onBeforeUnmount(() => {
@@ -208,6 +233,10 @@ onBeforeUnmount(() => {
   if (recoveryTimer !== null) {
     clearTimeout(recoveryTimer)
     recoveryTimer = null
+  }
+  if (updateCheckTimer !== null) {
+    clearTimeout(updateCheckTimer)
+    updateCheckTimer = null
   }
   document.removeEventListener('keydown', onDesktopKeyDown)
   ui.flush()
@@ -315,6 +344,8 @@ const rightCollapsed = computed({
         @remove-recent="onRemoveRecent"
         @request-import-workspace="actions.promptWebWorkspaceImport()"
       />
+
+      <UpdateModal v-if="isDesktop" />
     </div>
   </UApp>
 </template>

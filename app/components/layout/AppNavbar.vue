@@ -2,6 +2,7 @@
 import { useDesktopDocumentStore } from '~/stores/desktopDocument'
 import type { WorkspaceMode } from '~/stores/ui'
 import { useUiStore } from '~/stores/ui'
+import { useUpdaterStore } from '~/stores/updater'
 import { useWorkspaceStore } from '~/stores/workspace'
 
 const ui = useUiStore()
@@ -26,6 +27,7 @@ const endpointsCount = computed(() =>
 const isDesktop = isDesktopApp()
 const desktopDoc = isDesktop ? useDesktopDocumentStore() : null
 const desktopActions = isDesktop ? useDesktopDocumentActions() : null
+const updater = isDesktop ? useUpdaterStore() : null
 const shortcutsOpen = ref(false)
 
 const isDark = computed(() => colorMode.value !== 'light')
@@ -70,6 +72,20 @@ const fileItems = computed(() => {
       { label: 'Open…', icon: 'i-ph-folder-open', onSelect: () => void desktopActions.openFile() },
       { label: 'Save', icon: 'i-ph-floppy-disk', onSelect: () => void desktopActions.saveFile() },
       { label: 'Save As…', icon: 'i-ph-floppy-disk-back', onSelect: () => void desktopActions.saveFileAs() }
+    ],
+    [
+      {
+        label: updater?.updateAvailable && updater.info ? `Update Available (${updater.info.tag})…` : 'Check for Updates…',
+        icon: 'i-ph-arrow-circle-up',
+        onSelect: () => {
+          if (!updater) return
+          if (updater.updateAvailable || updater.status === 'installed') {
+            updater.openModal()
+          } else {
+            void updater.checkForUpdates()
+          }
+        }
+      }
     ]
   ]
 })
@@ -144,7 +160,8 @@ const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ??
             class="inline-flex items-center gap-1.5 rounded-md border border-line-panel bg-surface-block/90 px-2 py-0.5 max-w-52"
             :title="desktopDoc.currentFilePath ?? 'Unsaved workspace'"
           >
-            <UIcon name="i-ph-file-code" class="size-3.5 text-ink-dim shrink-0" />
+            <BrandMark v-if="desktopDoc.fileName.toLowerCase().endsWith('.schemacrafter')" size-class="size-3.5" />
+            <UIcon v-else name="i-ph-file-code" class="size-3.5 text-ink-dim shrink-0" />
             <span class="truncate font-mono text-[11.5px] text-ink">{{ desktopDoc.fileName }}</span>
             <span
               v-if="desktopDoc.isDirty"
@@ -269,6 +286,28 @@ const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ??
       </UDropdownMenu>
 
       <span class="hidden sm:block w-px h-5 bg-line-chrome mx-0.5" />
+
+      <UTooltip
+        v-if="updater && (updater.updateAvailable || updater.status === 'installed')"
+        :text="updater.status === 'installed' ? 'Update installed — click to restart' : `SchemaCrafter ${updater.info?.tag ?? ''} is available`"
+      >
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 font-mono tabular-nums text-[11px] font-semibold transition-colors"
+          :class="updater.status === 'installed'
+            ? 'border-[#2A7B5B]/45 bg-[#2A7B5B]/16 text-[#68D3A8] [.light_&]:border-[#1C5941]/35 [.light_&]:bg-[#2A7B5B]/10 [.light_&]:text-[#1B6B4A] hover:bg-[#2A7B5B]/25'
+            : 'border-accent-500/45 bg-accent-500/18 text-accent-300 [.light_&]:border-accent-600/35 [.light_&]:bg-accent-600/10 [.light_&]:text-accent-700 hover:bg-accent-500/28'"
+          @click="updater.openModal()"
+        >
+          <UIcon
+            :name="updater.status === 'installed' ? 'i-ph-arrow-clockwise' : 'i-ph-arrow-circle-up'"
+            class="size-3.5 shrink-0"
+          />
+          <span class="hidden md:inline">
+            {{ updater.status === 'installed' ? 'Restart' : (updater.info?.tag ?? 'Update') }}
+          </span>
+        </button>
+      </UTooltip>
 
       <UTooltip :text="isDark ? 'Switch to light theme' : 'Switch to dark theme'">
         <UButton

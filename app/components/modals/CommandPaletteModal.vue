@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ORMTarget } from '#shared/types/schema'
 import { useUiStore } from '~/stores/ui'
+import { useUpdaterStore } from '~/stores/updater'
 import { useWorkspaceStore } from '~/stores/workspace'
 
 interface CommandEntry {
@@ -28,6 +29,7 @@ const actions = useWorkspaceActions()
 const colorMode = useColorMode()
 const isDesktop = isDesktopApp()
 const desktopActions = isDesktop ? useDesktopDocumentActions() : null
+const updater = isDesktop ? useUpdaterStore() : null
 
 const query = ref('')
 const activeIndex = ref(0)
@@ -117,7 +119,20 @@ const allCommands = computed<CommandEntry[]>(() => {
     cmds.push(
       { id: 'exp-folder', category: 'Tools & Export', label: 'Export all files to folder…', icon: 'i-ph-folder-open', run: () => actions.exportDesktopFolder() },
       { id: 'desk-open', category: 'Desktop File', label: 'Open project file…', hint: 'Ctrl+O', icon: 'i-ph-folder-open', run: () => { void desktopActions.openFile() } },
-      { id: 'desk-save', category: 'Desktop File', label: 'Save project file', hint: 'Ctrl+S', icon: 'i-ph-floppy-disk', run: () => { void desktopActions.saveFile() } }
+      { id: 'desk-save', category: 'Desktop File', label: 'Save project file', hint: 'Ctrl+S', icon: 'i-ph-floppy-disk', run: () => { void desktopActions.saveFile() } },
+      {
+        id: 'desk-updates',
+        category: 'Desktop File',
+        label: updater?.updateAvailable && updater.info ? `Install update (${updater.info.tag})…` : 'Check for updates…',
+        hint: 'GitHub Releases',
+        icon: 'i-ph-arrow-circle-up',
+        keywords: 'update upgrade version release latest',
+        run: () => {
+          if (!updater) return
+          if (updater.updateAvailable || updater.status === 'installed') updater.openModal()
+          else void updater.checkForUpdates()
+        }
+      }
     )
   }
 

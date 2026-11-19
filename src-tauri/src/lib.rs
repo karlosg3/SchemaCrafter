@@ -1,3 +1,5 @@
+mod updater;
+
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use tauri::Manager;
@@ -101,7 +103,11 @@ pub fn run() {
         .manage(PendingOpenFile::default())
         .invoke_handler(tauri::generate_handler![
             take_pending_open_file,
-            allow_and_read_recent_file
+            allow_and_read_recent_file,
+            updater::check_for_updates,
+            updater::install_deb_update,
+            updater::restart_app,
+            updater::open_external_url
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::DragDrop(tauri::DragDropEvent::Drop { paths, .. }) = event {

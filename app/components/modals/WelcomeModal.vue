@@ -168,7 +168,8 @@ async function pickTemplate(index: number) {
                 class="flex-1 min-w-0 flex items-center gap-2 text-left"
                 @click="emit('openRecent', entry.path); open = false"
               >
-                <UIcon name="i-ph-file-code" class="size-4 shrink-0 text-accent-400 [.light_&]:text-accent-600" />
+                <BrandMark v-if="entry.name.toLowerCase().endsWith('.schemacrafter')" size-class="size-4" />
+                <UIcon v-else name="i-ph-file-code" class="size-4 shrink-0 text-accent-400 [.light_&]:text-accent-600" />
                 <span class="font-mono text-[12px] text-ink-bright shrink-0">{{ entry.name }}</span>
                 <span class="font-mono text-[10.5px] text-ink-dim truncate">{{ entry.path }}</span>
               </button>
