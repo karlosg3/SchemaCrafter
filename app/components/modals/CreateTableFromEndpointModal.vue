@@ -61,12 +61,12 @@ function submit() {
   <UModal
     v-model:open="open"
     title="Create Table from Route"
-    :ui="{ content: 'max-w-md border border-line-chrome bg-surface-chrome' }"
+    :ui="{ content: 'max-w-md border border-line-panel bg-[#0E1E35] [.light_&]:bg-surface-block' }"
     @after:leave="emit('after:leave')"
   >
     <template #body>
       <form id="create-table-from-ep-form" class="space-y-4" @submit.prevent="submit">
-        <div class="rounded-lg border border-line-panel bg-surface-raised/60 px-3 py-2 space-y-0.5">
+        <div class="rounded-md border border-line-panel bg-surface-block [.light_&]:bg-surface-raised px-3 py-2 space-y-0.5">
           <p class="text-[10.5px] uppercase tracking-wider text-ink-dim">
             Derived from
           </p>
@@ -118,26 +118,26 @@ function submit() {
               <input v-model="includeParentFk" type="checkbox" class="accent-accent-500">
               <span class="font-mono text-ink-bright truncate">{{ parentFk.columnName }}</span>
             </span>
-            <span class="shrink-0 font-mono text-[10px] text-accent-400">
+            <span class="shrink-0 font-mono text-[10px] text-accent-300 [.light_&]:text-accent-700">
               FK → {{ parentFk.targetTableName }}.{{ parentFk.targetColumnName }}
             </span>
           </label>
         </div>
 
         <UFormField label="Accent colour">
-          <div class="flex items-center gap-2">
+          <div class="grid grid-cols-4 sm:grid-cols-8 gap-2">
             <button
               v-for="(g, i) in GRADIENTS"
               :key="i"
               type="button"
               :aria-label="`Colour ${i + 1}`"
               :aria-pressed="isSelectedGradient(g)"
-              class="size-7 rounded-md grid place-items-center ring-offset-2 ring-offset-surface-chrome transition-transform hover:scale-105"
-              :class="isSelectedGradient(g) ? 'ring-2 ring-ink-bright' : 'opacity-80 hover:opacity-100'"
+              class="h-7 w-full rounded-md grid place-items-center ring-offset-2 ring-offset-[#0E1E35] [.light_&]:ring-offset-surface-block transition-transform hover:scale-105"
+              :class="isSelectedGradient(g) ? 'ring-2 ring-ink-bright' : 'opacity-85 hover:opacity-100'"
               :style="{ background: `linear-gradient(135deg, ${g[0]}, ${g[1]})` }"
               @click="gradient = [...g] as Gradient"
             >
-              <UIcon v-if="isSelectedGradient(g)" name="i-ph-check-bold" class="size-3.5 text-white" />
+              <UIcon v-if="isSelectedGradient(g)" name="i-ph-check-bold" class="size-3.5 text-white drop-shadow" />
             </button>
           </div>
         </UFormField>

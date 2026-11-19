@@ -68,17 +68,30 @@ async function pickTemplate(index: number) {
     v-model:open="open"
     title="Welcome to SchemaCrafter"
     description="Open a recent workspace, restore an unsaved session, or start from a template."
-    :ui="{ content: 'max-w-2xl border border-line-chrome bg-surface-chrome' }"
+    :ui="{ content: 'max-w-2xl border border-line-panel bg-[#0E1E35] [.light_&]:bg-surface-block' }"
   >
     <template #body>
       <div class="space-y-5">
+        <!-- Brand drafting banner -->
+        <div class="flex items-center gap-3.5 rounded-md border border-line-panel bg-surface-block [.light_&]:bg-surface-raised/85 px-3.5 py-3">
+          <BrandMark size-class="size-10" />
+          <div class="min-w-0">
+            <p class="text-[14px] font-semibold text-ink-bright tracking-tight">
+              SchemaCrafter
+            </p>
+            <p class="text-[11.5px] text-ink-muted">
+              Architectural Database &amp; API Blueprint Studio
+            </p>
+          </div>
+        </div>
+
         <!-- Crash recovery banner -->
         <div
           v-if="props.recovery"
-          class="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 flex flex-wrap items-center justify-between gap-3"
+          class="rounded-md border border-[#D99426]/45 bg-[#D99426]/12 p-3 flex flex-wrap items-center justify-between gap-3"
         >
           <div class="space-y-0.5 min-w-0">
-            <p class="text-[12.5px] font-semibold text-amber-300 [.light_&]:text-amber-800 flex items-center gap-1.5">
+            <p class="text-[12.5px] font-semibold text-[#F2C15A] [.light_&]:text-[#8A5406] flex items-center gap-1.5">
               <UIcon name="i-ph-clock-counter-clockwise" class="size-4 shrink-0" />
               Unsaved session found
             </p>
@@ -108,11 +121,11 @@ async function pickTemplate(index: number) {
         <div class="grid sm:grid-cols-2 gap-2.5">
           <button
             type="button"
-            class="flex items-center gap-3 rounded-lg border border-line-panel bg-surface-raised/60 p-3 text-left
-                   hover:border-accent-500/50 hover:bg-surface-raised transition-colors"
+            class="flex items-center gap-3 rounded-md border border-line-panel bg-surface-block [.light_&]:bg-surface-raised/80 p-3 text-left
+                   hover:border-accent-500/55 hover:bg-surface-raised transition-colors"
             @click="startBlank()"
           >
-            <span class="size-9 rounded-lg bg-accent-500/15 border border-accent-500/25 grid place-items-center text-accent-400 shrink-0">
+            <span class="size-9 rounded-md bg-accent-500/15 border border-accent-500/30 grid place-items-center text-accent-400 [.light_&]:text-accent-600 shrink-0">
               <UIcon name="i-ph-file-plus" class="size-4.5" />
             </span>
             <div class="min-w-0">
@@ -123,11 +136,11 @@ async function pickTemplate(index: number) {
 
           <button
             type="button"
-            class="flex items-center gap-3 rounded-lg border border-line-panel bg-surface-raised/60 p-3 text-left
-                   hover:border-accent-500/50 hover:bg-surface-raised transition-colors"
+            class="flex items-center gap-3 rounded-md border border-line-panel bg-surface-block [.light_&]:bg-surface-raised/80 p-3 text-left
+                   hover:border-accent-500/55 hover:bg-surface-raised transition-colors"
             @click="openProject()"
           >
-            <span class="size-9 rounded-lg bg-sky-500/15 border border-sky-500/25 grid place-items-center text-sky-400 shrink-0">
+            <span class="size-9 rounded-md bg-[#265385]/22 border border-[#265385]/40 grid place-items-center text-[#7CC4FA] [.light_&]:bg-[#265385]/10 [.light_&]:border-[#1B5E8A]/28 [.light_&]:text-[#1B5E8A] shrink-0">
               <UIcon name="i-ph-folder-open" class="size-4.5" />
             </span>
             <div class="min-w-0">
@@ -148,16 +161,16 @@ async function pickTemplate(index: number) {
             <div
               v-for="entry in props.recentFiles"
               :key="entry.path"
-              class="group flex items-center gap-2 rounded-md border border-line-row bg-surface-raised/40 px-2.5 py-1.5 hover:border-line-panel"
+              class="group flex items-center gap-2 rounded-md border border-line-row bg-surface-block [.light_&]:bg-surface-raised/65 px-2.5 py-1.5 hover:border-accent-500/40"
             >
               <button
                 type="button"
                 class="flex-1 min-w-0 flex items-center gap-2 text-left"
                 @click="emit('openRecent', entry.path); open = false"
               >
-                <UIcon name="i-ph-file-code" class="size-4 shrink-0 text-accent-400" />
+                <UIcon name="i-ph-file-code" class="size-4 shrink-0 text-accent-400 [.light_&]:text-accent-600" />
                 <span class="font-mono text-[12px] text-ink-bright shrink-0">{{ entry.name }}</span>
-                <span class="font-mono text-[10.5px] text-ink-faint truncate">{{ entry.path }}</span>
+                <span class="font-mono text-[10.5px] text-ink-dim truncate">{{ entry.path }}</span>
               </button>
               <UButton
                 icon="i-ph-x"
@@ -182,13 +195,13 @@ async function pickTemplate(index: number) {
               v-for="(tpl, idx) in PROJECT_TEMPLATES"
               :key="tpl.id"
               type="button"
-              class="flex flex-col gap-1.5 rounded-lg border border-line-panel bg-surface-raised/45 p-3 text-left
-                     hover:border-accent-500/50 hover:bg-surface-raised transition-colors"
+              class="flex flex-col gap-1.5 rounded-md border border-line-panel bg-surface-block [.light_&]:bg-surface-raised/75 p-3 text-left
+                     hover:border-accent-500/55 hover:bg-surface-raised transition-colors"
               @click="pickTemplate(idx)"
             >
               <div class="flex items-center justify-between gap-2">
-                <UIcon :name="tpl.icon" class="size-4 text-accent-400" />
-                <span class="font-mono text-[9.5px] uppercase text-ink-faint">{{ tpl.engine }}</span>
+                <UIcon :name="tpl.icon" class="size-4 text-accent-400 [.light_&]:text-accent-600" />
+                <span class="font-mono text-[9.5px] uppercase text-ink-dim">{{ tpl.engine }}</span>
               </div>
               <p class="text-[12.5px] font-semibold text-ink-bright">{{ tpl.name }}</p>
               <p class="text-[11px] text-ink-muted leading-snug line-clamp-3">{{ tpl.description }}</p>

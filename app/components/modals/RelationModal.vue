@@ -45,15 +45,15 @@ function save() {
     v-model:open="open"
     title="Foreign key relation"
     description="Configure referential integrity rules or remove this link."
-    :ui="{ content: 'max-w-md border border-line-chrome bg-surface-chrome' }"
+    :ui="{ content: 'max-w-md border border-line-panel bg-[#0E1E35] [.light_&]:bg-surface-block' }"
     @after:leave="emit('after:leave')"
   >
     <template #body>
       <form id="relation-form" class="space-y-4" @submit.prevent="save">
-        <div class="rounded-lg border border-line-panel bg-surface-raised/60 px-3 py-2.5 flex items-center gap-2 font-mono text-[12px]">
+        <div class="rounded-md border border-line-panel bg-surface-block [.light_&]:bg-surface-raised px-3 py-2.5 flex items-center gap-2 font-mono text-[12px]">
           <span class="truncate text-ink-bright font-semibold">{{ sourceLabel }}</span>
-          <UIcon name="i-ph-arrow-right" class="size-3.5 shrink-0 text-accent-400" />
-          <span class="truncate text-accent-400 font-semibold">{{ targetLabel }}</span>
+          <UIcon name="i-ph-arrow-right" class="size-3.5 shrink-0 text-accent-400 [.light_&]:text-accent-600" />
+          <span class="truncate text-accent-300 [.light_&]:text-accent-700 font-semibold">{{ targetLabel }}</span>
         </div>
 
         <div class="grid grid-cols-2 gap-3">

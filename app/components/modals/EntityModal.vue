@@ -130,13 +130,13 @@ function isSelected(gradient: Gradient) {
   <UModal
     v-model:open="open"
     :title="title"
-    :ui="{ content: 'max-w-md border border-line-chrome bg-surface-chrome' }"
+    :ui="{ content: 'max-w-md border border-line-panel bg-[#0E1E35] [.light_&]:bg-surface-block' }"
     @after:leave="emit('after:leave')"
   >
     <template #body>
       <form id="entity-form" class="space-y-4" @submit.prevent="submit">
         <!-- Live preview pill -->
-        <div class="flex items-center gap-3 rounded-lg border border-line-panel bg-surface-raised/60 px-3 py-2.5">
+        <div class="flex items-center gap-3 rounded-md border border-line-panel bg-surface-block [.light_&]:bg-surface-raised px-3 py-2.5">
           <span
             class="size-8 shrink-0 rounded-md grid place-items-center shadow-sm"
             :style="{ background: `linear-gradient(135deg, ${local.gradient[0]}, ${local.gradient[1]})` }"
@@ -179,12 +179,12 @@ function isSelected(gradient: Gradient) {
         </UFormField>
 
         <UFormField label="Accent colour">
-          <div class="flex flex-wrap items-center gap-2">
+          <div class="grid grid-cols-4 sm:grid-cols-8 gap-2">
             <button
               v-for="gradient in GRADIENTS"
               :key="gradient[0]"
               type="button"
-              class="size-7 rounded-md grid place-items-center ring-offset-2 ring-offset-surface-chrome transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-accent-500"
+              class="h-7 w-full rounded-md grid place-items-center ring-offset-2 ring-offset-[#0E1E35] [.light_&]:ring-offset-surface-block transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-accent-500"
               :class="isSelected(gradient) ? 'ring-2 ring-ink-bright' : 'opacity-85 hover:opacity-100'"
               :style="{ background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})` }"
               :aria-label="`Colour ${gradient[0]}`"
@@ -224,7 +224,7 @@ function isSelected(gradient: Gradient) {
                   <span class="font-mono text-[11.5px] text-ink-bright truncate">{{ idx.name }}</span>
                   <span
                     v-if="idx.isUnique"
-                    class="rounded border border-sky-400/40 bg-sky-500/12 px-1 py-0.5 font-mono text-[9px] text-sky-300 [.light_&]:text-sky-700"
+                    class="rounded border border-[#265385]/45 bg-[#265385]/18 px-1 py-0.5 font-mono text-[9px] text-[#7CC4FA] [.light_&]:border-[#1B5E8A]/30 [.light_&]:bg-[#265385]/10 [.light_&]:text-[#1B5E8A]"
                   >UQ</span>
                   <span
                     v-if="idx.type && idx.type !== 'BTREE'"

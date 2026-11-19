@@ -140,18 +140,18 @@ function clearAllFilters() {
 </script>
 
 <template>
-  <div class="h-full w-full flex min-h-0 bg-surface-canvas overflow-hidden">
+  <div class="h-full w-full flex min-h-0 bg-[#0F213A] [.light_&]:bg-surface-canvas overflow-hidden">
     <!-- Scalar-style left API index -->
-    <aside class="hidden md:flex w-68 shrink-0 flex-col min-h-0 border-r border-line-chrome bg-surface-chrome/70">
+    <aside class="hidden md:flex w-68 shrink-0 flex-col min-h-0 border-r border-line-chrome bg-surface-chrome">
       <div class="p-3 border-b border-line-chrome space-y-2.5">
         <div class="flex items-center justify-between gap-2">
           <div class="flex items-center gap-1.5 min-w-0">
-            <UIcon name="i-ph-plugs-connected" class="size-3.5 text-accent-400 shrink-0" />
+            <UIcon name="i-ph-plugs-connected" class="size-3.5 text-accent-400 [.light_&]:text-accent-600 shrink-0" />
             <span class="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-dim truncate">
               API Reference
             </span>
           </div>
-          <span class="rounded border border-line-row bg-surface-raised px-1.5 py-0.5 font-mono text-[10px] text-ink-dim">
+          <span class="rounded border border-line-row bg-surface-root/80 px-1.5 py-0.5 font-mono tabular-nums text-[10px] text-ink-dim">
             {{ totalEndpointsCount }}
           </span>
         </div>
@@ -175,13 +175,13 @@ function clearAllFilters() {
         </UInput>
 
         <!-- Method filter pills -->
-        <div class="flex flex-wrap gap-1">
+        <div class="flex flex-wrap gap-1 rounded-md bg-surface-root/75 p-1 border border-line-row">
           <button
             type="button"
             class="rounded border px-1.5 py-0.5 font-mono text-[9.5px] font-semibold transition-colors"
             :class="activeMethod === 'ALL'
-              ? 'border-accent-500/50 bg-accent-500/15 text-accent-300 [.light_&]:text-accent-700'
-              : 'border-line-row bg-surface-raised/50 text-ink-dim hover:text-ink'"
+              ? 'border-accent-500/50 bg-accent-500/18 text-accent-300 [.light_&]:bg-surface-block [.light_&]:text-accent-700 [.light_&]:border-accent-600/35'
+              : 'border-transparent text-ink-dim hover:text-ink'"
             @click="activeMethod = 'ALL'"
           >
             ALL
@@ -193,7 +193,7 @@ function clearAllFilters() {
             class="rounded border px-1.5 py-0.5 font-mono text-[9.5px] font-semibold transition-colors"
             :class="activeMethod === m
               ? `${HTTP_METHOD_BADGE[m]} ring-1 ring-current`
-              : 'border-line-row bg-surface-raised/50 text-ink-dim hover:text-ink'"
+              : 'border-transparent text-ink-dim hover:text-ink'"
             @click="activeMethod = activeMethod === m ? 'ALL' : m"
           >
             {{ m }}
@@ -210,12 +210,12 @@ function clearAllFilters() {
         >
           <button
             type="button"
-            class="w-full flex items-center gap-1.5 rounded px-2 py-1.5 text-left hover:bg-accent-500/8 transition-colors"
+            class="w-full flex items-center gap-1.5 rounded px-2 py-1.5 text-left hover:bg-surface-raised/75 transition-colors"
             @click="toggleModuleCollapse(group.module.id); scrollToElement(`mod-section-${group.module.id}`)"
           >
             <UIcon
               :name="collapsedModules.has(group.module.id) ? 'i-ph-caret-right' : 'i-ph-caret-down'"
-              class="size-3 text-ink-faint shrink-0"
+              class="size-3 text-ink-dim shrink-0"
             />
             <span
               class="size-2 rounded-xs shrink-0"
@@ -224,7 +224,7 @@ function clearAllFilters() {
             <span class="flex-1 min-w-0 text-[12px] font-semibold text-ink-bright truncate">
               {{ group.module.name }}
             </span>
-            <span class="font-mono text-[10px] text-ink-faint shrink-0">
+            <span class="font-mono tabular-nums text-[10px] text-ink-dim shrink-0">
               {{ group.endpoints.length }}
             </span>
           </button>
@@ -237,7 +237,7 @@ function clearAllFilters() {
               v-for="item in group.endpoints"
               :key="item.entity.id"
               type="button"
-              class="w-full flex items-center gap-2 rounded px-2 py-1 text-left hover:bg-accent-500/8 transition-colors"
+              class="w-full flex items-center gap-2 rounded px-2 py-1 text-left hover:bg-surface-raised/75 transition-colors"
               @click="scrollToElement(`ep-card-${item.entity.id}`, item.entity.id)"
             >
               <span
@@ -293,13 +293,13 @@ function clearAllFilters() {
               <h1 class="text-[18px] font-semibold text-ink-bright tracking-tight">
                 {{ ui.activeDatabase?.name ?? 'Workspace' }} API Endpoints
               </h1>
-              <span class="rounded border border-line-panel bg-surface-raised px-2 py-0.5 font-mono text-[10.5px] text-ink-muted">
+              <span class="rounded border border-line-panel bg-surface-block px-2 py-0.5 font-mono tabular-nums text-[10.5px] text-ink-muted">
                 {{ dbModules.length }} {{ dbModules.length === 1 ? 'module' : 'modules' }}
               </span>
-              <span class="rounded border border-line-panel bg-surface-raised px-2 py-0.5 font-mono text-[10.5px] text-ink-muted">
+              <span class="rounded border border-line-panel bg-surface-block px-2 py-0.5 font-mono tabular-nums text-[10.5px] text-ink-muted">
                 {{ visibleEndpointsCount }} {{ visibleEndpointsCount === 1 ? 'endpoint' : 'endpoints' }}
               </span>
-              <span class="rounded border border-line-panel bg-surface-raised px-2 py-0.5 font-mono text-[10.5px] text-ink-muted">
+              <span class="rounded border border-line-panel bg-surface-block px-2 py-0.5 font-mono tabular-nums text-[10.5px] text-ink-muted">
                 {{ linkedTablesCount }} linked {{ linkedTablesCount === 1 ? 'table' : 'tables' }}
               </span>
             </div>
@@ -341,14 +341,14 @@ function clearAllFilters() {
         <!-- Active cross-view filter banners -->
         <div
           v-if="activeFilterTable || activeFilterModule || activeMethod !== 'ALL' || search.trim()"
-          class="flex flex-wrap items-center gap-2 rounded-md border border-accent-500/35 bg-accent-500/8 px-3 py-2 text-[11.5px]"
+          class="flex flex-wrap items-center gap-2 rounded-md border border-accent-500/35 bg-accent-500/10 px-3 py-2 text-[11.5px]"
         >
-          <UIcon name="i-ph-funnel" class="size-3.5 text-accent-400 shrink-0" />
+          <UIcon name="i-ph-funnel" class="size-3.5 text-accent-400 [.light_&]:text-accent-600 shrink-0" />
           <span class="text-ink-muted">Active filters:</span>
 
           <span
             v-if="activeFilterTable"
-            class="inline-flex items-center gap-1 rounded border border-accent-500/40 bg-surface-chrome px-2 py-0.5 font-mono text-[11px] text-ink-bright"
+            class="inline-flex items-center gap-1 rounded border border-accent-500/40 bg-surface-block px-2 py-0.5 font-mono text-[11px] text-ink-bright"
           >
             table:{{ activeFilterTable.name }}
             <button type="button" class="text-ink-dim hover:text-ink-bright" @click="ui.endpointFilterTableId = null">
@@ -358,7 +358,7 @@ function clearAllFilters() {
 
           <span
             v-if="activeFilterModule"
-            class="inline-flex items-center gap-1 rounded border border-accent-500/40 bg-surface-chrome px-2 py-0.5 text-[11px] text-ink-bright"
+            class="inline-flex items-center gap-1 rounded border border-accent-500/40 bg-surface-block px-2 py-0.5 text-[11px] text-ink-bright"
           >
             module: {{ activeFilterModule.name }}
             <button type="button" class="text-ink-dim hover:text-ink-bright" @click="ui.endpointFilterModuleId = null">
@@ -377,7 +377,7 @@ function clearAllFilters() {
 
           <button
             type="button"
-            class="ml-auto text-[11px] font-medium text-accent-400 hover:underline"
+            class="ml-auto text-[11px] font-medium text-accent-300 [.light_&]:text-accent-700 hover:underline"
             @click="clearAllFilters"
           >
             Clear all
@@ -387,9 +387,9 @@ function clearAllFilters() {
         <!-- Empty database API state with 1-click table generators -->
         <div
           v-if="dbModules.length === 0"
-          class="rounded-lg border border-dashed border-line-panel bg-surface-block/70 p-8 text-center space-y-5"
+          class="rounded-md border border-dashed border-line-panel bg-surface-block p-8 text-center space-y-5"
         >
-          <span class="mx-auto size-11 rounded-lg bg-accent-500/12 border border-accent-500/25 grid place-items-center text-accent-400">
+          <span class="mx-auto size-11 rounded-md bg-accent-500/14 border border-accent-500/30 grid place-items-center text-accent-400 [.light_&]:text-accent-600">
             <UIcon name="i-ph-plugs-connected" class="size-5" />
           </span>
           <div class="space-y-1 max-w-md mx-auto">
@@ -431,7 +431,7 @@ function clearAllFilters() {
                 class="inline-flex items-center gap-1.5 rounded border border-line-panel bg-surface-raised/70 px-2.5 py-1.5 font-mono text-[11.5px] text-ink hover:text-ink-bright hover:border-accent-500/50 transition-colors"
                 @click="apiDialogs.generateEndpointsForTable(tbl.id)"
               >
-                <UIcon name="i-ph-sparkle" class="size-3.5 text-accent-400" />
+                <UIcon name="i-ph-sparkle" class="size-3.5 text-accent-400 [.light_&]:text-accent-600" />
                 <span>{{ tbl.name }}</span>
               </button>
             </div>
@@ -441,7 +441,7 @@ function clearAllFilters() {
         <!-- Filtered empty state -->
         <div
           v-else-if="filteredGroups.length === 0"
-          class="rounded-lg border border-line-panel bg-surface-block/60 p-8 text-center space-y-3"
+          class="rounded-md border border-line-panel bg-surface-block p-8 text-center space-y-3"
         >
           <p class="text-[13px] font-medium text-ink-bright">
             No endpoints match the current filters
@@ -463,17 +463,17 @@ function clearAllFilters() {
           v-for="group in filteredGroups"
           :id="`mod-section-${group.module.id}`"
           :key="group.module.id"
-          class="rounded-lg border border-line-block bg-surface-block overflow-hidden"
+          class="rounded-md border border-line-block bg-surface-block overflow-hidden"
         >
           <!-- Module header -->
           <div
             class="h-[3px] w-full"
             :style="{ background: `linear-gradient(90deg, ${group.module.gradient[0]}, ${group.module.gradient[1]})` }"
           />
-          <div class="px-4 py-3 border-b border-line-header bg-surface-raised/45 space-y-2.5">
+          <div class="px-4 py-3 border-b border-line-header bg-surface-raised/80 [.light_&]:bg-surface-raised space-y-2.5">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex items-center gap-2 min-w-0">
-                <UIcon name="i-ph-cubes" class="size-4 text-accent-400 shrink-0" />
+                <UIcon name="i-ph-cubes" class="size-4 text-accent-400 [.light_&]:text-accent-600 shrink-0" />
                 <h2 class="text-[14.5px] font-semibold text-ink-bright truncate">
                   {{ group.module.name }}
                 </h2>
@@ -528,7 +528,7 @@ function clearAllFilters() {
                   color="neutral"
                   variant="ghost"
                   size="xs"
-                  class="hover:text-red-400"
+                  class="hover:text-[#EC7484] [.light_&]:hover:text-[#A62C3E]"
                   @click="apiDialogs.removeModule(group.module.id)"
                 />
               </div>
@@ -540,7 +540,7 @@ function clearAllFilters() {
 
             <!-- Linked tables bar -->
             <div class="flex flex-wrap items-center gap-1.5">
-              <span class="text-[10.5px] uppercase tracking-wider text-ink-faint mr-1">
+              <span class="text-[10.5px] uppercase tracking-wider text-ink-dim mr-1">
                 Entities:
               </span>
               <button
@@ -551,10 +551,10 @@ function clearAllFilters() {
                 title="Open table in Database view"
                 @click="ui.openTableInDatabase(tid)"
               >
-                <UIcon name="i-ph-table" class="size-3 text-accent-400" />
+                <UIcon name="i-ph-table" class="size-3 text-accent-400 [.light_&]:text-accent-600" />
                 <span>{{ tableById.get(tid)?.name ?? tid }}</span>
               </button>
-              <span v-if="group.module.tableIds.length === 0" class="text-[11px] text-ink-faint italic">
+              <span v-if="group.module.tableIds.length === 0" class="text-[11px] text-ink-dim italic">
                 No linked tables yet
               </span>
             </div>
@@ -566,8 +566,8 @@ function clearAllFilters() {
               v-for="item in group.endpoints"
               :id="`ep-card-${item.entity.id}`"
               :key="item.entity.id"
-              class="group px-4 py-3 flex flex-col gap-2 transition-colors hover:bg-surface-raised/40"
-              :class="highlightedEndpointId === item.entity.id ? 'bg-accent-500/12' : ''"
+              class="group px-4 py-3 flex flex-col gap-2 transition-colors hover:bg-surface-raised/45"
+              :class="highlightedEndpointId === item.entity.id ? 'bg-accent-500/14' : ''"
             >
               <div class="flex items-start gap-3">
                 <span
@@ -582,13 +582,13 @@ function clearAllFilters() {
                     <span
                       v-for="(tok, idx) in item.tokens"
                       :key="idx"
-                      :class="tok.isParam ? 'text-accent-400 font-semibold' : ''"
+                      :class="tok.isParam ? 'text-accent-300 [.light_&]:text-accent-700 font-semibold' : ''"
                     >{{ tok.text }}</span>
                   </div>
                   <p v-if="item.entity.description" class="text-[12px] text-ink-muted leading-snug">
                     {{ item.entity.description }}
                   </p>
-                  <p v-else class="text-[11.5px] text-ink-faint italic">
+                  <p v-else class="text-[11.5px] text-ink-dim italic">
                     No description
                   </p>
                 </div>
@@ -631,7 +631,7 @@ function clearAllFilters() {
                       color="neutral"
                       variant="ghost"
                       size="xs"
-                      class="hover:text-red-400"
+                      class="hover:text-[#EC7484] [.light_&]:hover:text-[#A62C3E]"
                       @click="apiDialogs.removeEndpoint(item.entity.id)"
                     />
                   </UTooltip>
@@ -644,11 +644,11 @@ function clearAllFilters() {
                   v-for="tid in item.entity.tableIds"
                   :key="tid"
                   type="button"
-                  class="inline-flex items-center gap-1 rounded border border-line-row bg-surface-raised/80 px-1.5 py-0.5 font-mono text-[10px] text-ink-muted hover:text-ink-bright hover:border-accent-500/45 transition-colors"
+                  class="inline-flex items-center gap-1 rounded border border-line-row bg-surface-chrome/90 px-1.5 py-0.5 font-mono text-[10px] text-ink-muted hover:text-ink-bright hover:border-accent-500/45 transition-colors"
                   title="Jump to table in Database view"
                   @click="ui.openTableInDatabase(tid)"
                 >
-                  <UIcon name="i-ph-table" class="size-2.5 text-accent-400" />
+                  <UIcon name="i-ph-table" class="size-2.5 text-accent-400 [.light_&]:text-accent-600" />
                   <span>{{ tableById.get(tid)?.name ?? tid }}</span>
                 </button>
                 <button
@@ -657,7 +657,7 @@ function clearAllFilters() {
                   class="inline-flex items-center gap-1 rounded border border-dashed border-line-dashed px-1.5 py-0.5 text-[10px] text-ink-dim hover:text-ink-bright hover:border-accent-500/50 transition-colors"
                   @click="apiDialogs.createTableFromEndpoint({ endpointId: item.entity.id })"
                 >
-                  <UIcon name="i-ph-plus" class="size-2.5 text-accent-400" />
+                  <UIcon name="i-ph-plus" class="size-2.5 text-accent-400 [.light_&]:text-accent-600" />
                   <span>Create table from route</span>
                 </button>
               </div>
@@ -671,7 +671,7 @@ function clearAllFilters() {
               <button
                 v-if="ui.state.editable"
                 type="button"
-                class="text-accent-400 font-medium hover:underline"
+                class="text-accent-300 [.light_&]:text-accent-700 font-medium hover:underline"
                 @click="ui.activeDbId && apiDialogs.createEndpoint(ui.activeDbId, group.module.id)"
               >
                 Add first endpoint

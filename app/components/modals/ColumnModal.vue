@@ -163,7 +163,7 @@ function submit() {
     :title="title"
     description="Configure column schema, constraints, and relations."
     side="right"
-    :ui="{ content: 'max-w-md border-s border-line-chrome bg-surface-chrome' }"
+    :ui="{ content: 'max-w-md border-s border-line-panel bg-[#0E1E35] [.light_&]:bg-surface-block' }"
     @after:leave="emit('after:leave')"
   >
     <template #body>
@@ -264,8 +264,8 @@ function submit() {
               type="button"
               class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[11.5px] font-medium transition-colors"
               :class="local.isPrimaryKey
-                ? 'border-amber-400/50 bg-amber-500/15 text-amber-300 [.light_&]:text-amber-700'
-                : 'border-line-panel bg-surface-raised text-ink-muted hover:text-ink-bright'"
+                ? 'border-[#D99426]/55 bg-[#D99426]/16 text-[#F2C15A] [.light_&]:border-[#B47415]/40 [.light_&]:bg-[#D99426]/12 [.light_&]:text-[#8A5406]'
+                : 'border-line-panel bg-surface-block [.light_&]:bg-surface-raised text-ink-muted hover:text-ink-bright'"
               :aria-pressed="local.isPrimaryKey"
               @click="toggleFlag('isPrimaryKey')"
             >
@@ -278,8 +278,8 @@ function submit() {
               :disabled="local.isPrimaryKey"
               class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[11.5px] font-medium transition-colors disabled:opacity-40"
               :class="local.isNullable
-                ? 'border-accent-400/50 bg-accent-500/15 text-accent-300 [.light_&]:text-accent-700'
-                : 'border-line-panel bg-surface-raised text-ink-muted hover:text-ink-bright'"
+                ? 'border-accent-500/50 bg-accent-500/16 text-accent-300 [.light_&]:border-accent-600/35 [.light_&]:bg-accent-600/10 [.light_&]:text-accent-700'
+                : 'border-line-panel bg-surface-block [.light_&]:bg-surface-raised text-ink-muted hover:text-ink-bright'"
               :aria-pressed="local.isNullable"
               @click="toggleFlag('isNullable')"
             >
@@ -290,8 +290,8 @@ function submit() {
               type="button"
               class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[11.5px] font-medium transition-colors"
               :class="local.isUnique
-                ? 'border-sky-400/50 bg-sky-500/15 text-sky-300 [.light_&]:text-sky-700'
-                : 'border-line-panel bg-surface-raised text-ink-muted hover:text-ink-bright'"
+                ? 'border-[#265385]/55 bg-[#265385]/22 text-[#7CC4FA] [.light_&]:border-[#1B5E8A]/35 [.light_&]:bg-[#265385]/10 [.light_&]:text-[#1B5E8A]'
+                : 'border-line-panel bg-surface-block [.light_&]:bg-surface-raised text-ink-muted hover:text-ink-bright'"
               :aria-pressed="local.isUnique"
               @click="toggleFlag('isUnique')"
             >
@@ -303,8 +303,8 @@ function submit() {
               :disabled="local.isPrimaryKey"
               class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[11.5px] font-medium transition-colors disabled:opacity-40"
               :class="local.isIndexed
-                ? 'border-emerald-400/50 bg-emerald-500/15 text-emerald-300 [.light_&]:text-emerald-700'
-                : 'border-line-panel bg-surface-raised text-ink-muted hover:text-ink-bright'"
+                ? 'border-[#2A7B5B]/55 bg-[#2A7B5B]/18 text-[#68D3A8] [.light_&]:border-[#1C5941]/35 [.light_&]:bg-[#2A7B5B]/10 [.light_&]:text-[#1B6B4A]'
+                : 'border-line-panel bg-surface-block [.light_&]:bg-surface-raised text-ink-muted hover:text-ink-bright'"
               :aria-pressed="local.isIndexed"
               @click="toggleFlag('isIndexed')"
             >
@@ -317,8 +317,8 @@ function submit() {
                 :disabled="!canAutoIncrement"
                 class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[11.5px] font-medium transition-colors disabled:opacity-40"
                 :class="local.isAutoIncrement
-                  ? 'border-violet-400/50 bg-violet-500/15 text-violet-300 [.light_&]:text-violet-700'
-                  : 'border-line-panel bg-surface-raised text-ink-muted hover:text-ink-bright'"
+                  ? 'border-[#257A8C]/55 bg-[#257A8C]/20 text-[#6BC5D6] [.light_&]:border-[#1A5A69]/35 [.light_&]:bg-[#257A8C]/10 [.light_&]:text-[#145B6B]'
+                  : 'border-line-panel bg-surface-block [.light_&]:bg-surface-raised text-ink-muted hover:text-ink-bright'"
                 :aria-pressed="local.isAutoIncrement"
                 @click="toggleFlag('isAutoIncrement')"
               >
@@ -337,10 +337,10 @@ function submit() {
             <USwitch v-model="hasFk" size="sm" :disabled="tables.length === 0" aria-label="Toggle foreign key" />
           </div>
 
-          <div v-if="hasFk && local.foreignKey" class="rounded-lg border border-line-panel bg-surface-raised/70 p-3 space-y-3">
+          <div v-if="hasFk && local.foreignKey" class="rounded-md border border-line-panel bg-surface-block [.light_&]:bg-surface-raised p-3 space-y-3">
             <p
               v-if="targetTable && targetColumnName"
-              class="flex items-center gap-1.5 font-mono text-[11px] text-accent-400"
+              class="flex items-center gap-1.5 font-mono text-[11px] text-accent-300 [.light_&]:text-accent-700"
             >
               <span class="truncate">{{ normalizedName || local.name || 'column' }}</span>
               <UIcon name="i-ph-arrow-right" class="size-3 shrink-0" />

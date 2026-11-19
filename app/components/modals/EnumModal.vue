@@ -54,7 +54,7 @@ function submit() {
   <UModal
     v-model:open="open"
     :title="title"
-    :ui="{ content: 'max-w-md border border-line-chrome bg-surface-chrome' }"
+    :ui="{ content: 'max-w-md border border-line-panel bg-[#0E1E35] [.light_&]:bg-surface-block' }"
     @after:leave="emit('after:leave')"
   >
     <template #body>
@@ -63,11 +63,11 @@ function submit() {
           <UInput v-model="local.name" placeholder="e.g. OrderStatus" autofocus class="w-full font-mono" />
         </UFormField>
 
-        <div v-if="previewValues.length > 0" class="flex flex-wrap gap-1.5 rounded-lg border border-line-panel bg-surface-raised/60 p-2.5">
+        <div v-if="previewValues.length > 0" class="flex flex-wrap gap-1.5 rounded-md border border-line-panel bg-surface-block [.light_&]:bg-surface-raised p-2.5">
           <span
             v-for="(val, i) in previewValues"
             :key="`${val}-${i}`"
-            class="rounded px-2 py-0.5 font-mono text-[11px] bg-red-500/12 text-red-300 [.light_&]:text-red-700 border border-red-500/25"
+            class="rounded px-2 py-0.5 font-mono text-[11px] bg-[#A63A50]/18 text-[#F29BA7] border border-[#A63A50]/35 [.light_&]:bg-[#A63A50]/10 [.light_&]:text-[#8F2937] [.light_&]:border-[#A63A50]/30"
           >
             {{ val }}
           </span>
@@ -97,7 +97,7 @@ function submit() {
           <button
             type="button"
             class="mt-2 w-full h-8 rounded-md border border-dashed border-line-dashed text-[11.5px] font-medium
-                   text-accent-400 hover:bg-accent-500/8 transition-colors
+                   text-accent-300 [.light_&]:text-accent-700 hover:bg-accent-500/10 transition-colors
                    focus-visible:outline-2 focus-visible:outline-accent-500"
             @click="addValue()"
           >

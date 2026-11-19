@@ -141,13 +141,13 @@ function submit() {
   <UModal
     v-model:open="open"
     title="Generate Endpoints from Table"
-    :ui="{ content: 'max-w-xl border border-line-chrome bg-surface-chrome' }"
+    :ui="{ content: 'max-w-xl border border-line-panel bg-[#0E1E35] [.light_&]:bg-surface-block' }"
     @after:leave="emit('after:leave')"
   >
     <template #body>
       <form id="generate-endpoints-form" class="space-y-4" @submit.prevent="submit">
         <!-- Source table summary -->
-        <div class="flex items-center gap-2.5 rounded-lg border border-line-panel bg-surface-raised/60 px-3 py-2">
+        <div class="flex items-center gap-2.5 rounded-md border border-line-panel bg-surface-block [.light_&]:bg-surface-raised px-3 py-2">
           <span
             class="size-7 shrink-0 rounded-md grid place-items-center"
             :style="{ background: `linear-gradient(135deg, ${tableGradient[0]}, ${tableGradient[1]})` }"
@@ -297,7 +297,7 @@ function submit() {
 
     <template #footer>
       <div class="flex items-center justify-between gap-2 w-full">
-        <span class="text-[11px] font-mono text-ink-dim">
+        <span class="text-[11px] font-mono tabular-nums text-ink-dim">
           {{ selectedCount }} {{ selectedCount === 1 ? 'endpoint' : 'endpoints' }}
         </span>
         <div class="flex gap-2">

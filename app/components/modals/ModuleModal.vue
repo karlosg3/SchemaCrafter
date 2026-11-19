@@ -83,13 +83,13 @@ function submit() {
   <UModal
     v-model:open="open"
     :title="title"
-    :ui="{ content: 'max-w-lg border border-line-chrome bg-surface-chrome' }"
+    :ui="{ content: 'max-w-lg border border-line-panel bg-[#0E1E35] [.light_&]:bg-surface-block' }"
     @after:leave="emit('after:leave')"
   >
     <template #body>
       <form id="module-form" class="space-y-4" @submit.prevent="submit">
         <!-- Live preview -->
-        <div class="flex items-center gap-3 rounded-lg border border-line-panel bg-surface-raised/60 px-3 py-2.5">
+        <div class="flex items-center gap-3 rounded-md border border-line-panel bg-surface-block [.light_&]:bg-surface-raised px-3 py-2.5">
           <span
             class="size-8 shrink-0 rounded-md grid place-items-center shadow-sm"
             :style="{ background: `linear-gradient(135deg, ${local.gradient[0]}, ${local.gradient[1]})` }"
@@ -134,19 +134,19 @@ function submit() {
         </UFormField>
 
         <UFormField label="Accent colour">
-          <div class="flex items-center gap-2">
+          <div class="grid grid-cols-4 sm:grid-cols-8 gap-2">
             <button
               v-for="(g, i) in GRADIENTS"
               :key="i"
               type="button"
               :aria-label="`Colour ${i + 1}`"
               :aria-pressed="isSelectedGradient(g)"
-              class="size-7 rounded-md grid place-items-center ring-offset-2 ring-offset-surface-chrome transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-accent-500"
-              :class="isSelectedGradient(g) ? 'ring-2 ring-ink-bright' : 'opacity-80 hover:opacity-100'"
+              class="h-7 w-full rounded-md grid place-items-center ring-offset-2 ring-offset-[#0E1E35] [.light_&]:ring-offset-surface-block transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-accent-500"
+              :class="isSelectedGradient(g) ? 'ring-2 ring-ink-bright' : 'opacity-85 hover:opacity-100'"
               :style="{ background: `linear-gradient(135deg, ${g[0]}, ${g[1]})` }"
               @click="local.gradient = [...g] as Gradient"
             >
-              <UIcon v-if="isSelectedGradient(g)" name="i-ph-check-bold" class="size-3.5 text-white" />
+              <UIcon v-if="isSelectedGradient(g)" name="i-ph-check-bold" class="size-3.5 text-white drop-shadow" />
             </button>
           </div>
         </UFormField>

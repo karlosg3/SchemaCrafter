@@ -63,7 +63,7 @@ function submit() {
     v-model:open="open"
     title="Import SQL"
     description="Paste CREATE TABLE statements. Existing tables are refreshed in place; everything else stays untouched."
-    :ui="{ content: 'max-w-2xl border border-line-chrome bg-surface-chrome' }"
+    :ui="{ content: 'max-w-2xl border border-line-panel bg-[#0E1E35] [.light_&]:bg-surface-block' }"
     @after:leave="emit('after:leave')"
   >
     <template #body>
@@ -82,7 +82,7 @@ function submit() {
           />
         </div>
 
-        <div class="h-72 rounded-lg border border-line-panel overflow-hidden bg-surface-code">
+        <div class="h-72 rounded-md border border-line-panel overflow-hidden bg-surface-code">
           <LazyCodeEditor
             v-if="open"
             ref="editorRef"
@@ -93,24 +93,24 @@ function submit() {
           />
         </div>
 
-        <div v-if="preview && 'error' in preview" class="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-[11.5px] text-red-400">
+        <div v-if="preview && 'error' in preview" class="rounded-md border border-[#A63A50]/40 bg-[#A63A50]/14 px-3 py-2 text-[11.5px] text-[#F28B97] [.light_&]:text-[#A62C3E]">
           {{ preview.error }}
         </div>
         <div
           v-else-if="preview"
-          class="flex flex-wrap items-center gap-2 rounded-md border border-line-panel bg-surface-raised/60 px-3 py-2 text-[11.5px] font-mono text-ink-dim"
+          class="flex flex-wrap items-center gap-2 rounded-md border border-line-panel bg-surface-block [.light_&]:bg-surface-raised px-3 py-2 text-[11.5px] font-mono tabular-nums text-ink-dim"
         >
-          <span v-if="preview.added.length" class="text-emerald-400 [.light_&]:text-emerald-700">
+          <span v-if="preview.added.length" class="text-[#59C99B] [.light_&]:text-[#1B6B4A]">
             +{{ preview.added.length }} new ({{ preview.added.join(', ') }})
           </span>
-          <span v-if="preview.updated.length" class="text-sky-400 [.light_&]:text-sky-700">
+          <span v-if="preview.updated.length" class="text-[#7CC4FA] [.light_&]:text-[#1B5E8A]">
             ~{{ preview.updated.length }} updated ({{ preview.updated.join(', ') }})
           </span>
-          <span v-if="!preview.added.length && !preview.updated.length" class="text-ink-faint">
+          <span v-if="!preview.added.length && !preview.updated.length" class="text-ink-dim">
             No CREATE TABLE statements detected yet.
           </span>
         </div>
-        <p v-else class="text-[11.5px] text-ink-faint">
+        <p v-else class="text-[11.5px] text-ink-dim">
           Paste DDL above or click "Load sample SQL" to preview schema diff.
         </p>
       </form>

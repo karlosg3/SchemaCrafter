@@ -54,7 +54,7 @@ const SECTIONS = computed(() => {
     v-model:open="open"
     title="Keyboard Shortcuts"
     description="Quick reference for canvas navigation, code editing, and desktop files."
-    :ui="{ content: 'max-w-md border border-line-chrome bg-surface-chrome' }"
+    :ui="{ content: 'max-w-md border border-line-panel bg-[#0E1E35] [.light_&]:bg-surface-block' }"
   >
     <template #body>
       <div class="space-y-5">
@@ -66,14 +66,14 @@ const SECTIONS = computed(() => {
             <div
               v-for="item in section.items"
               :key="item.label"
-              class="flex items-center justify-between gap-3 rounded-md border border-line-row bg-surface-raised/50 px-2.5 py-1.5"
+              class="flex items-center justify-between gap-3 rounded-md border border-line-row bg-surface-block [.light_&]:bg-surface-raised/80 px-2.5 py-1.5"
             >
               <span class="text-[12px] text-ink">{{ item.label }}</span>
               <span class="flex items-center gap-1 shrink-0">
                 <kbd
                   v-for="key in item.keys"
                   :key="key"
-                  class="rounded border border-line-panel bg-surface-chrome px-1.5 py-0.5 font-mono text-[10.5px] text-ink-bright"
+                  class="rounded border border-line-panel bg-surface-chrome px-1.5 py-0.5 font-mono text-[10.5px] text-ink-bright shadow-2xs"
                 >
                   {{ key }}
                 </kbd>

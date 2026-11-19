@@ -276,7 +276,7 @@ function onKeyDown(event: KeyboardEvent) {
 <template>
   <UModal
     v-model:open="open"
-    :ui="{ content: 'max-w-lg border border-line-chrome bg-surface-chrome overflow-hidden' }"
+    :ui="{ content: 'max-w-lg border border-line-panel bg-[#0E1E35] [.light_&]:bg-surface-block overflow-hidden' }"
   >
     <template #content>
       <div class="flex flex-col" @keydown="onKeyDown">
@@ -287,13 +287,13 @@ function onKeyDown(event: KeyboardEvent) {
             type="text"
             autofocus
             placeholder="Jump to table, run action, export, switch generator…"
-            class="w-full bg-transparent text-[13px] text-ink-bright placeholder:text-ink-faint focus:outline-none"
+            class="w-full bg-transparent text-[13px] text-ink-bright placeholder:text-ink-dim focus:outline-none"
           >
-          <kbd class="rounded border border-line-panel bg-surface-raised px-1.5 py-0.5 font-mono text-[10px] text-ink-dim">ESC</kbd>
+          <kbd class="rounded border border-line-panel bg-surface-chrome px-1.5 py-0.5 font-mono text-[10px] text-ink-dim shadow-2xs">ESC</kbd>
         </div>
 
         <div class="max-h-80 overflow-y-auto scrollbar-thin p-1.5 space-y-0.5">
-          <p v-if="filtered.length === 0" class="py-8 text-center text-[12px] text-ink-faint">
+          <p v-if="filtered.length === 0" class="py-8 text-center text-[12px] text-ink-dim">
             No matching commands or schema entities.
           </p>
 
@@ -301,20 +301,20 @@ function onKeyDown(event: KeyboardEvent) {
             v-for="(item, idx) in filtered"
             :key="item.id"
             type="button"
-            class="w-full flex items-center gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors"
+            class="w-full flex items-center gap-2.5 rounded-r-md border-l-2 px-2.5 py-2 text-left transition-colors"
             :class="idx === activeIndex
-              ? 'bg-accent-500/15 text-ink-bright'
-              : 'text-ink hover:bg-white/5'"
+              ? 'border-accent-400 [.light_&]:border-accent-600 bg-surface-raised text-ink-bright'
+              : 'border-transparent text-ink hover:bg-surface-raised/55'"
             @mouseenter="activeIndex = idx"
             @click="execute(item)"
           >
             <UIcon
               :name="item.icon"
               class="size-4 shrink-0"
-              :class="idx === activeIndex ? 'text-accent-400' : 'text-ink-dim'"
+              :class="idx === activeIndex ? 'text-accent-400 [.light_&]:text-accent-600' : 'text-ink-dim'"
             />
             <span class="flex-1 min-w-0 truncate text-[12.5px] font-medium">{{ item.label }}</span>
-            <span class="text-[10.5px] font-mono text-ink-faint shrink-0">
+            <span class="text-[10.5px] font-mono text-ink-dim shrink-0">
               {{ item.hint ?? item.category }}
             </span>
           </button>

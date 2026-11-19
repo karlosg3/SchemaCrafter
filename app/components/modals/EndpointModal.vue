@@ -94,13 +94,13 @@ function submit() {
   <UModal
     v-model:open="open"
     :title="title"
-    :ui="{ content: 'max-w-lg border border-line-chrome bg-surface-chrome' }"
+    :ui="{ content: 'max-w-lg border border-line-panel bg-[#0E1E35] [.light_&]:bg-surface-block' }"
     @after:leave="emit('after:leave')"
   >
     <template #body>
       <form id="endpoint-form" class="space-y-4" @submit.prevent="submit">
         <!-- Live endpoint preview -->
-        <div class="flex items-center gap-2.5 rounded-lg border border-line-panel bg-surface-raised/65 px-3 py-2.5">
+        <div class="flex items-center gap-2.5 rounded-md border border-line-panel bg-surface-block [.light_&]:bg-surface-raised px-3 py-2.5">
           <span
             class="shrink-0 rounded border px-2 py-0.5 font-mono text-[10.5px] font-semibold tracking-wide"
             :class="HTTP_METHOD_BADGE[local.method]"
@@ -111,7 +111,7 @@ function submit() {
             <span
               v-for="(tok, idx) in previewTokens"
               :key="idx"
-              :class="tok.isParam ? 'text-accent-400 font-semibold' : ''"
+              :class="tok.isParam ? 'text-accent-300 [.light_&]:text-accent-700 font-semibold' : ''"
             >{{ tok.text }}</span>
           </span>
         </div>
@@ -192,7 +192,7 @@ function submit() {
               class="inline-flex items-center gap-1.5 rounded border border-dashed border-line-dashed px-2.5 py-1 text-[11px] font-medium text-ink-muted hover:text-ink-bright hover:border-accent-500/60 hover:bg-accent-500/5 transition-colors"
               @click="handleQuickCreateTable"
             >
-              <UIcon name="i-ph-table" class="size-3.5 text-accent-400" />
+              <UIcon name="i-ph-table" class="size-3.5 text-accent-400 [.light_&]:text-accent-600" />
               <span>Create new table from route…</span>
             </button>
           </div>

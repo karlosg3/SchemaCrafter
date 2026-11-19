@@ -22,16 +22,16 @@ useModalDismiss(open, close, false)
   <UModal
     v-model:open="open"
     :title="title"
-    :ui="{ content: 'max-w-sm border border-line-chrome bg-surface-chrome' }"
+    :ui="{ content: 'max-w-sm border border-line-panel bg-[#0E1E35] [.light_&]:bg-surface-block' }"
     @after:leave="emit('after:leave')"
   >
     <template #body>
       <div class="flex items-start gap-3">
         <span
-          class="size-8 shrink-0 rounded-lg grid place-items-center border"
+          class="size-8 shrink-0 rounded-md grid place-items-center border"
           :class="color === 'error'
-            ? 'bg-red-500/10 border-red-500/25 text-red-400'
-            : 'bg-accent-500/10 border-accent-500/25 text-accent-400'"
+            ? 'bg-[#A63A50]/16 border-[#A63A50]/35 text-[#EC7484] [.light_&]:bg-[#A63A50]/10 [.light_&]:border-[#A63A50]/30 [.light_&]:text-[#A62C3E]'
+            : 'bg-accent-500/14 border-accent-500/30 text-accent-400 [.light_&]:text-accent-600'"
         >
           <UIcon :name="color === 'error' ? 'i-ph-warning' : 'i-ph-info'" class="size-4" />
         </span>
