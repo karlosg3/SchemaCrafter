@@ -9,6 +9,9 @@ const SECTIONS = computed(() => {
       title: 'Workspace & Navigation',
       items: [
         { keys: ['Ctrl', 'K'], label: 'Open Command Palette (jump, export, switch)' },
+        { keys: ['Alt', '1'], label: 'Switch to Database view' },
+        { keys: ['Alt', '2'], label: 'Switch to Modules canvas' },
+        { keys: ['Alt', '3'], label: 'Switch to Endpoints catalog' },
         { keys: ['Ctrl', 'Z'], label: 'Undo workspace mutation' },
         { keys: ['Ctrl', 'Shift', 'Z'], label: 'Redo workspace mutation' }
       ]

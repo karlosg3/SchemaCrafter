@@ -226,8 +226,12 @@ const leftCollapsed = computed({
 })
 
 const rightCollapsed = computed({
-  get: () => !ui.state.rightOpen,
-  set: (value: boolean) => { ui.state.rightOpen = !value }
+  get: () => ui.state.workspaceMode !== 'database' || !ui.state.rightOpen,
+  set: (value: boolean) => {
+    if (ui.state.workspaceMode === 'database') {
+      ui.state.rightOpen = !value
+    }
+  }
 })
 </script>
 

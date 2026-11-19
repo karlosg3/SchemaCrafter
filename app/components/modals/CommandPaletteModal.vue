@@ -23,6 +23,7 @@ const emit = defineEmits<{
 const ui = useUiStore()
 const workspace = useWorkspaceStore()
 const dialogs = useEntityDialogs()
+const apiDialogs = useApiDialogs()
 const actions = useWorkspaceActions()
 const colorMode = useColorMode()
 const isDesktop = isDesktopApp()
@@ -53,8 +54,41 @@ const allCommands = computed<CommandEntry[]>(() => {
     const dbId = ui.activeDbId
     cmds.push(
       { id: 'act-new-schema', category: 'Actions', label: 'New schema', hint: 'Active database', icon: 'i-ph-folders', run: () => dialogs.createSchema(dbId) },
+      { id: 'act-new-module', category: 'API Design', label: 'New API module', hint: 'Group endpoints', icon: 'i-ph-cubes', run: () => { void apiDialogs.createModule(dbId) } },
+      { id: 'act-new-endpoint', category: 'API Design', label: 'New endpoint', hint: 'GET / POST / PUT / PATCH / DELETE', icon: 'i-ph-plugs-connected', run: () => { void apiDialogs.createEndpoint(dbId) } },
       { id: 'act-import-sql', category: 'Actions', label: 'Import SQL DDL…', icon: 'i-ph-upload-simple', run: () => dialogs.importSql(dbId) }
     )
+  }
+
+  cmds.push(
+    { id: 'mode-database', category: 'Views', label: 'Switch to Database view', hint: 'Alt+1', icon: 'i-ph-database', run: () => ui.setWorkspaceMode('database') },
+    { id: 'mode-modules', category: 'Views', label: 'Switch to Modules canvas', hint: 'Alt+2', icon: 'i-ph-cubes', run: () => ui.setWorkspaceMode('modules') },
+    { id: 'mode-endpoints', category: 'Views', label: 'Switch to Endpoints catalog', hint: 'Alt+3', icon: 'i-ph-plugs-connected', run: () => ui.setWorkspaceMode('endpoints') }
+  )
+
+  if (ui.activeDbId) {
+    for (const mod of workspace.modulesOfDatabase(ui.activeDbId)) {
+      cmds.push({
+        id: `jump-mod-${mod.id}`,
+        category: 'Modules',
+        label: mod.name,
+        hint: mod.basePath || `${mod.endpointIds.length} ep`,
+        icon: 'i-ph-cubes',
+        keywords: `module api ${mod.basePath} ${mod.description ?? ''}`,
+        run: () => ui.openModuleInCanvas(mod.id)
+      })
+      for (const ep of workspace.endpointsOfModule(mod.id)) {
+        cmds.push({
+          id: `jump-ep-${ep.id}`,
+          category: 'Endpoints',
+          label: `${ep.method} ${ep.path}`,
+          hint: mod.name,
+          icon: 'i-ph-plugs-connected',
+          keywords: `endpoint api ${ep.method} ${ep.path} ${ep.description}`,
+          run: () => ui.openEndpointsForModule(mod.id)
+        })
+      }
+    }
   }
 
   if (ui.state.editable) {

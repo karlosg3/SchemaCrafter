@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useDesktopDocumentStore } from '~/stores/desktopDocument'
+import type { WorkspaceMode } from '~/stores/ui'
 import { useUiStore } from '~/stores/ui'
 import { useWorkspaceStore } from '~/stores/workspace'
 
@@ -8,6 +9,19 @@ const workspace = useWorkspaceStore()
 const dialogs = useEntityDialogs()
 const actions = useWorkspaceActions()
 const colorMode = useColorMode()
+
+const WORKSPACE_MODES: { id: WorkspaceMode, label: string, icon: string, shortcut: string }[] = [
+  { id: 'database', label: 'Database', icon: 'i-ph-database', shortcut: 'Alt+1' },
+  { id: 'modules', label: 'Modules', icon: 'i-ph-cubes', shortcut: 'Alt+2' },
+  { id: 'endpoints', label: 'Endpoints', icon: 'i-ph-plugs-connected', shortcut: 'Alt+3' }
+]
+
+const modulesCount = computed(() =>
+  ui.activeDbId ? workspace.modulesOfDatabase(ui.activeDbId).length : 0
+)
+const endpointsCount = computed(() =>
+  ui.activeDbId ? workspace.endpointsOfDatabase(ui.activeDbId).length : 0
+)
 
 const isDesktop = isDesktopApp()
 const desktopDoc = isDesktop ? useDesktopDocumentStore() : null
@@ -23,6 +37,19 @@ function onGlobalCommandShortcut(event: KeyboardEvent) {
   if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'k') {
     event.preventDefault()
     ui.commandPaletteOpen = !ui.commandPaletteOpen
+    return
+  }
+  if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+    if (event.key === '1') {
+      event.preventDefault()
+      ui.setWorkspaceMode('database')
+    } else if (event.key === '2') {
+      event.preventDefault()
+      ui.setWorkspaceMode('modules')
+    } else if (event.key === '3') {
+      event.preventDefault()
+      ui.setWorkspaceMode('endpoints')
+    }
   }
 }
 
@@ -138,6 +165,43 @@ const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ??
       </span>
     </div>
 
+    <!-- Center: Workspace perspective switcher (Database / Modules / Endpoints) -->
+    <nav
+      aria-label="Workspace view"
+      class="inline-flex items-center gap-0.5 rounded-md border border-line-panel bg-surface-root/60 p-0.5 shrink-0"
+    >
+      <UTooltip
+        v-for="mode in WORKSPACE_MODES"
+        :key="mode.id"
+        :text="`${mode.label} (${mode.shortcut})`"
+      >
+        <button
+          type="button"
+          :aria-pressed="ui.state.workspaceMode === mode.id"
+          class="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-[11.5px] font-medium transition-colors"
+          :class="ui.state.workspaceMode === mode.id
+            ? 'bg-accent-500/18 text-accent-300 [.light_&]:text-accent-700 shadow-2xs'
+            : 'text-ink-muted hover:text-ink-bright'"
+          @click="ui.setWorkspaceMode(mode.id)"
+        >
+          <UIcon :name="mode.icon" class="size-3.5 shrink-0" />
+          <span class="hidden sm:inline">{{ mode.label }}</span>
+          <span
+            v-if="mode.id === 'modules' && modulesCount > 0"
+            class="hidden md:inline font-mono text-[9.5px] opacity-75"
+          >
+            {{ modulesCount }}
+          </span>
+          <span
+            v-else-if="mode.id === 'endpoints' && endpointsCount > 0"
+            class="hidden md:inline font-mono text-[9.5px] opacity-75"
+          >
+            {{ endpointsCount }}
+          </span>
+        </button>
+      </UTooltip>
+    </nav>
+
     <!-- Right: search trigger, desktop file actions, import, export, theme/help, sidebar toggle -->
     <div class="flex items-center gap-1.5">
       <UTooltip text="Command Palette (Ctrl+K)">
@@ -234,6 +298,7 @@ const engine = computed(() => workspace.database(ui.activeDbId ?? '')?.engine ??
       </UTooltip>
 
       <UButton
+        v-if="ui.state.workspaceMode === 'database'"
         :icon="ui.state.rightOpen ? 'i-ph-sidebar-simple-fill' : 'i-ph-sidebar-simple'"
         color="neutral"
         variant="ghost"
