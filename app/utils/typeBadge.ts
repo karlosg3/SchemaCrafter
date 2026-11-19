@@ -1,6 +1,6 @@
 /**
- * Semantic badge colours per data-type family so columns can be scanned visually
- * at a glance in both dark and light mode.
+ * Calibrated architectural-ink badge colours per data-type family, tuned for
+ * WCAG AA contrast in both Blueprint Dark and Drafting Paper Light modes.
  */
 const NUMERIC_RE = /^(?:INT|BIGINT|SMALLINT|TINYINT|INTEGER|SERIAL|BIGSERIAL|FLOAT|DOUBLE|REAL|DECIMAL|NUMERIC|NUMBER)\b/i
 const STRING_RE = /^(?:VARCHAR|TEXT|CHAR|CHARACTER|NVARCHAR|STRING|CITEXT)\b/i
@@ -12,22 +12,22 @@ const STRUCT_RE = /^(?:JSON|JSONB|ARRAY|BYTEA|BLOB|BINARY)\b/i
 export function badgeToneClass(badge: string): string {
   const upper = badge.trim()
   if (UUID_RE.test(upper)) {
-    return 'bg-violet-500/12 text-violet-400 border-violet-500/25 [.light_&]:text-violet-700 [.light_&]:bg-violet-500/10'
+    return 'bg-[#EA6A38]/14 text-[#F7A37E] border-[#EA6A38]/30 [.light_&]:text-[#A83716] [.light_&]:bg-[#EA6A38]/10 [.light_&]:border-[#C8431F]/28'
   }
   if (NUMERIC_RE.test(upper)) {
-    return 'bg-amber-500/12 text-amber-400 border-amber-500/25 [.light_&]:text-amber-700 [.light_&]:bg-amber-500/10'
+    return 'bg-[#D99426]/14 text-[#F2C36B] border-[#D99426]/30 [.light_&]:text-[#8F5907] [.light_&]:bg-[#D99426]/12 [.light_&]:border-[#B47415]/28'
   }
   if (STRING_RE.test(upper)) {
-    return 'bg-sky-500/12 text-sky-400 border-sky-500/25 [.light_&]:text-sky-700 [.light_&]:bg-sky-500/10'
+    return 'bg-[#5BA4DA]/14 text-[#93CDF5] border-[#5BA4DA]/30 [.light_&]:text-[#194E78] [.light_&]:bg-[#265385]/10 [.light_&]:border-[#265385]/28'
   }
   if (TEMPORAL_RE.test(upper)) {
-    return 'bg-emerald-500/12 text-emerald-400 border-emerald-500/25 [.light_&]:text-emerald-700 [.light_&]:bg-emerald-500/10'
+    return 'bg-[#2A7B5B]/18 text-[#7AD3AE] border-[#2A7B5B]/35 [.light_&]:text-[#185B40] [.light_&]:bg-[#2A7B5B]/10 [.light_&]:border-[#2A7B5B]/28'
   }
   if (BOOLEAN_RE.test(upper)) {
-    return 'bg-rose-500/12 text-rose-400 border-rose-500/25 [.light_&]:text-rose-700 [.light_&]:bg-rose-500/10'
+    return 'bg-[#A63A50]/18 text-[#EC90A0] border-[#A63A50]/35 [.light_&]:text-[#8D2438] [.light_&]:bg-[#A63A50]/10 [.light_&]:border-[#A63A50]/28'
   }
   if (STRUCT_RE.test(upper)) {
-    return 'bg-cyan-500/12 text-cyan-400 border-cyan-500/25 [.light_&]:text-cyan-700 [.light_&]:bg-cyan-500/10'
+    return 'bg-[#257A8C]/18 text-[#7AC7D8] border-[#257A8C]/35 [.light_&]:text-[#165766] [.light_&]:bg-[#257A8C]/10 [.light_&]:border-[#257A8C]/28'
   }
-  return 'bg-fuchsia-500/10 text-ink-muted border-line-panel'
+  return 'bg-surface-raised text-ink-muted border-line-panel'
 }

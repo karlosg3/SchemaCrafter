@@ -6,61 +6,64 @@
 @import "@nuxt/ui";
 
 /*
- * Precision Dark CAD / Studio design tokens, with Light mode overrides below.
+ * SchemaCrafter — Architectural Drafting Studio design system.
+ *
+ * Layer 1 (Primitives & Theme ramp): Prussian Blueprint (Dark) and Drafting Paper (Light)
+ * anchored by Vermilion Terracotta primary accents derived from docs/brand/.
  */
 @theme static {
   --font-sans: 'Inter Variable', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 
-  /* Surfaces */
-  --color-surface-root: #090a0d;
-  --color-surface-chrome: #11131a;
-  --color-surface-canvas: #0b0d12;
-  --color-surface-code: #0c0e14;
-  --color-surface-block: #151822;
-  --color-surface-raised: #181c26;
-  --color-surface-input: #1e2330;
+  /* Semantic Surfaces (Dark default: Blueprint Nocturno) */
+  --color-surface-root: #091322;
+  --color-surface-chrome: #0c192c;
+  --color-surface-canvas: #10233e;
+  --color-surface-code: #0b1728;
+  --color-surface-block: #152d4e;
+  --color-surface-raised: #1a355b;
+  --color-surface-input: #1f3e68;
 
-  /* Text ramp */
-  --color-ink-bright: #eef0f4;
-  --color-ink: #cbd0d8;
-  --color-ink-muted: #98a0ad;
-  --color-ink-dim: #6f7785;
-  --color-ink-faint: #596070;
-  --color-ink-tool: #8b92a0;
-  --color-ink-code: #d7dce4;
-  --color-ink-gutter: #4c5363;
+  /* Semantic Ink Ramp (Dark default: Warm Drafting Ivory) */
+  --color-ink-bright: #f6f1e7;
+  --color-ink: #dce3ec;
+  --color-ink-muted: #a9bcd3;
+  --color-ink-dim: #839bb8;
+  --color-ink-faint: #6782a3;
+  --color-ink-tool: #9ab1cc;
+  --color-ink-code: #e6dfd2;
+  --color-ink-gutter: #5c7696;
 
-  /* Hairlines */
-  --color-line-row: rgb(255 255 255 / 0.05);
-  --color-line-rail: rgb(255 255 255 / 0.07);
-  --color-line-chrome: rgb(255 255 255 / 0.09);
-  --color-line-header: rgb(255 255 255 / 0.10);
-  --color-line-panel: rgb(255 255 255 / 0.12);
-  --color-line-block: rgb(255 255 255 / 0.13);
-  --color-line-dashed: rgb(255 255 255 / 0.18);
+  /* Hairlines & Technical Dividers */
+  --color-line-row: rgb(232 244 255 / 0.07);
+  --color-line-rail: rgb(232 244 255 / 0.10);
+  --color-line-chrome: rgb(232 244 255 / 0.12);
+  --color-line-header: rgb(232 244 255 / 0.15);
+  --color-line-panel: rgb(232 244 255 / 0.18);
+  --color-line-block: rgb(232 244 255 / 0.22);
+  --color-line-dashed: rgb(232 244 255 / 0.30);
 
-  /* Accent */
-  --color-accent-50: oklch(97% 0.02 262);
-  --color-accent-100: oklch(94% 0.04 262);
-  --color-accent-200: oklch(89% 0.07 262);
-  --color-accent-300: oklch(82% 0.11 262);
-  --color-accent-400: oklch(74% 0.15 262);
-  --color-accent-500: oklch(66% 0.19 262);
-  --color-accent-600: oklch(58% 0.19 262);
-  --color-accent-700: oklch(49% 0.16 262);
-  --color-accent-800: oklch(40% 0.13 262);
-  --color-accent-900: oklch(33% 0.10 262);
-  --color-accent-950: oklch(23% 0.07 262);
+  /* Brand Accent Ramp — Vermilion Terracotta */
+  --color-accent-50: oklch(97% 0.02 36);
+  --color-accent-100: oklch(93% 0.04 36);
+  --color-accent-200: oklch(86% 0.08 35);
+  --color-accent-300: oklch(77% 0.13 35);
+  --color-accent-400: oklch(68% 0.17 34);
+  --color-accent-500: oklch(61% 0.18 33);
+  --color-accent-600: oklch(53% 0.17 32);
+  --color-accent-700: oklch(46% 0.15 31);
+  --color-accent-800: oklch(38% 0.12 31);
+  --color-accent-900: oklch(31% 0.09 30);
+  --color-accent-950: oklch(22% 0.06 30);
 
-  /* Canvas semantics */
-  --color-pk: #facc15;
-  --color-sync-pending: #f59e0b;
-  --color-sync-ok: #22c55e;
-  --color-rel-fk: rgb(129 140 248 / 0.72);
-  --color-rel-enum: rgb(248 113 113 / 0.68);
-  --color-rel-cross: rgb(148 163 184 / 0.50);
-  --color-rel-aggregate: rgb(148 163 184 / 0.60);
+  /* Canvas & Drafting Semantics */
+  --color-pk: #eab349;
+  --color-sync-pending: #e59a3a;
+  --color-sync-ok: #46b885;
+  --color-rel-fk: rgb(186 211 238 / 0.65);
+  --color-rel-enum: rgb(217 107 123 / 0.72);
+  --color-rel-cross: rgb(156 182 212 / 0.52);
+  --color-rel-aggregate: rgb(175 200 228 / 0.65);
 
   /* Block geometry — mirrored in shared/utils/graph.ts */
   --block-width: 260px;
@@ -72,84 +75,104 @@
   --block-border-w: 1px;
 }
 
+/* Layer 2: Dark Mode — Blueprint Nocturno */
 :root {
   color-scheme: dark;
-  --color-canvas-dot: rgb(255 255 255 / 0.08);
-  --sc-block-shadow: 0 12px 30px -10px rgb(0 0 0 / 0.65), 0 2px 6px rgb(0 0 0 / 0.35);
-  --sc-panel-bg: rgb(21 24 34 / 0.86);
-  --cm-comment: #636b7a;
-  --cm-keyword: #c084fc;
-  --cm-type: #7dd3fc;
-  --cm-string: #86efac;
-  --cm-number: #fbbf24;
-  --cm-attribute: #f0abfc;
-  --cm-atom: #fca5a5;
-  --cm-name: #d1d5db;
-  --cm-punctuation: #768091;
-  --cm-operator: #9aa1ac;
-  --cm-invalid: #f87171;
-  --cm-active-line: rgb(255 255 255 / 0.035);
-  --cm-bracket-bg: rgb(255 255 255 / 0.10);
+  --color-grid-minor: rgb(232 244 255 / 0.045);
+  --color-grid-major: rgb(232 244 255 / 0.105);
+  --color-canvas-dot: rgb(232 244 255 / 0.12);
+  --sc-block-shadow: 0 12px 28px -10px rgb(3 9 20 / 0.62), 0 2px 6px rgb(3 9 20 / 0.35);
+  --sc-panel-bg: rgb(12 25 44 / 0.92);
+
+  /* CodeMirror syntax calibrated for Blueprint Dark */
+  --cm-comment: #6f87a6;
+  --cm-keyword: #f59e6c;
+  --cm-type: #7cc4fa;
+  --cm-string: #7bd8a8;
+  --cm-number: #f2c15a;
+  --cm-attribute: #e6a87c;
+  --cm-atom: #ec7e8d;
+  --cm-name: #e6dfd2;
+  --cm-punctuation: #8aa3c0;
+  --cm-operator: #b3c6dc;
+  --cm-invalid: #f06e7d;
+  --cm-active-line: rgb(232 244 255 / 0.045);
+  --cm-bracket-bg: rgb(232 244 255 / 0.12);
+  --cm-selection: rgb(240 114 65 / 0.24);
+  --cm-search: rgb(234 179 73 / 0.22);
+  --cm-search-border: rgb(234 179 73 / 0.50);
+  --cm-search-selected: rgb(240 114 65 / 0.38);
 }
 
+/* Layer 2: Light Mode — Papel de Taller / Terracota */
 :root.light,
 html.light {
   color-scheme: light;
 
-  --color-surface-root: #f1f4f9;
-  --color-surface-chrome: #ffffff;
-  --color-surface-canvas: #eef1f6;
-  --color-surface-code: #f8fafc;
-  --color-surface-block: #ffffff;
-  --color-surface-raised: #f8fafc;
-  --color-surface-input: #f1f5f9;
+  --color-surface-root: #e6dfd1;
+  --color-surface-chrome: #efe9dc;
+  --color-surface-canvas: #f5efe4;
+  --color-surface-code: #f9f5ec;
+  --color-surface-block: #fcf9f2;
+  --color-surface-raised: #f3ece0;
+  --color-surface-input: #eae2d4;
 
-  --color-ink-bright: #0f172a;
-  --color-ink: #1e293b;
-  --color-ink-muted: #475569;
-  --color-ink-dim: #64748b;
-  --color-ink-faint: #94a3b8;
-  --color-ink-tool: #64748b;
-  --color-ink-code: #1e293b;
-  --color-ink-gutter: #94a3b8;
+  --color-ink-bright: #10243e;
+  --color-ink: #1d3554;
+  --color-ink-muted: #445e7d;
+  --color-ink-dim: #5b728e;
+  --color-ink-faint: #768ba4;
+  --color-ink-tool: #4c6685;
+  --color-ink-code: #182f4c;
+  --color-ink-gutter: #7a8fa8;
 
-  --color-line-row: rgb(15 23 42 / 0.06);
-  --color-line-rail: rgb(15 23 42 / 0.08);
-  --color-line-chrome: rgb(15 23 42 / 0.10);
-  --color-line-header: rgb(15 23 42 / 0.11);
-  --color-line-panel: rgb(15 23 42 / 0.14);
-  --color-line-block: rgb(15 23 42 / 0.15);
-  --color-line-dashed: rgb(15 23 42 / 0.22);
+  --color-line-row: rgb(16 36 62 / 0.07);
+  --color-line-rail: rgb(16 36 62 / 0.10);
+  --color-line-chrome: rgb(16 36 62 / 0.13);
+  --color-line-header: rgb(16 36 62 / 0.14);
+  --color-line-panel: rgb(16 36 62 / 0.18);
+  --color-line-block: rgb(16 36 62 / 0.22);
+  --color-line-dashed: rgb(16 36 62 / 0.30);
 
-  --color-pk: #ca8a04;
-  --color-rel-fk: rgb(79 70 229 / 0.72);
-  --color-rel-enum: rgb(220 38 38 / 0.65);
-  --color-rel-cross: rgb(100 116 139 / 0.55);
-  --color-rel-aggregate: rgb(100 116 139 / 0.65);
+  --color-pk: #a96d0b;
+  --color-sync-pending: #b86c14;
+  --color-sync-ok: #1f6f4f;
+  --color-rel-fk: rgb(35 72 115 / 0.65);
+  --color-rel-enum: rgb(166 58 80 / 0.72);
+  --color-rel-cross: rgb(76 102 133 / 0.55);
+  --color-rel-aggregate: rgb(35 72 115 / 0.68);
 
-  --color-canvas-dot: rgb(15 23 42 / 0.14);
-  --sc-block-shadow: 0 10px 26px -10px rgb(15 23 42 / 0.14), 0 1px 3px rgb(15 23 42 / 0.08);
-  --sc-panel-bg: rgb(255 255 255 / 0.88);
+  --color-grid-minor: rgb(19 42 71 / 0.055);
+  --color-grid-major: rgb(19 42 71 / 0.115);
+  --color-canvas-dot: rgb(19 42 71 / 0.16);
+  --sc-block-shadow: 0 10px 24px -10px rgb(16 36 62 / 0.14), 0 1px 3px rgb(16 36 62 / 0.08);
+  --sc-panel-bg: rgb(252 249 242 / 0.94);
 
-  --cm-comment: #64748b;
-  --cm-keyword: #7c3aed;
-  --cm-type: #0284c7;
-  --cm-string: #15803d;
-  --cm-number: #b45309;
-  --cm-attribute: #a21caf;
-  --cm-atom: #b91c1c;
-  --cm-name: #1e293b;
-  --cm-punctuation: #64748b;
-  --cm-operator: #475569;
-  --cm-invalid: #dc2626;
-  --cm-active-line: rgb(15 23 42 / 0.04);
-  --cm-bracket-bg: rgb(15 23 42 / 0.08);
+  /* CodeMirror syntax calibrated for Drafting Paper Light */
+  --cm-comment: #6a7f99;
+  --cm-keyword: #b53816;
+  --cm-type: #1b5e8a;
+  --cm-string: #1e6b4b;
+  --cm-number: #9a6008;
+  --cm-attribute: #8c4a27;
+  --cm-atom: #9f2a3c;
+  --cm-name: #182f4c;
+  --cm-punctuation: #5b728e;
+  --cm-operator: #355070;
+  --cm-invalid: #b52639;
+  --cm-active-line: rgb(16 36 62 / 0.045);
+  --cm-bracket-bg: rgb(16 36 62 / 0.09);
+  --cm-selection: rgb(200 67 31 / 0.16);
+  --cm-search: rgb(185 119 16 / 0.20);
+  --cm-search-border: rgb(185 119 16 / 0.45);
+  --cm-search-selected: rgb(200 67 31 / 0.28);
 }
 
+/* Layer 3: Nuxt UI bridge tokens */
 :root,
 .dark,
 .light {
-  /* Subtle technical micro-radius (midpoint between 0px sharp CAD and pillowy cards) */
+  /* Crisp architectural micro-chamfer */
   --ui-radius: 0.125rem;
 
   --ui-bg: var(--color-surface-chrome);
@@ -174,16 +197,32 @@ body {
   background-color: var(--color-surface-root);
   color: var(--color-ink);
   font-size: 13px;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* W3C WCAG 2.2 AA consistent keyboard focus indicator */
+:focus-visible {
+  outline: 2px solid var(--color-accent-500);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @layer components {
   .sc-panel {
     background-color: var(--sc-panel-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     border: 1px solid var(--color-line-panel);
     border-radius: 4px;
-    box-shadow: 0 10px 28px -8px rgb(0 0 0 / 0.42);
+    box-shadow: 0 8px 22px -8px rgb(5 12 24 / 0.36);
   }
 
   .sc-block {
@@ -196,6 +235,17 @@ body {
 
   .sc-block:hover {
     border-color: var(--color-line-dashed);
+  }
+
+  /* Subtle-yet-visible two-tier architectural drafting grid (16px minor / 80px major) */
+  .sc-blueprint-canvas {
+    background-color: var(--color-surface-canvas);
+    background-image:
+      linear-gradient(to right, var(--color-grid-major) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--color-grid-major) 1px, transparent 1px),
+      linear-gradient(to right, var(--color-grid-minor) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--color-grid-minor) 1px, transparent 1px);
+    background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
   }
 }
 
@@ -270,18 +320,18 @@ body {
   background: var(--sc-panel-bg);
   border: 1px solid var(--color-line-panel);
   border-radius: 4px;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(6px);
   overflow: hidden;
-  box-shadow: 0 10px 24px -8px rgb(0 0 0 / 0.35);
+  box-shadow: 0 8px 20px -8px rgb(5 12 24 / 0.32);
 }
 
 .vue-flow__minimap.sc-minimap .vue-flow__minimap-mask {
-  fill: color-mix(in srgb, var(--color-surface-root) 65%, transparent);
+  fill: color-mix(in srgb, var(--color-surface-root) 60%, transparent);
 }
 
 .vue-flow__minimap.sc-minimap .vue-flow__minimap-node {
   fill: var(--color-accent-500);
-  fill-opacity: 0.4;
+  fill-opacity: 0.42;
   stroke: var(--color-accent-400);
   stroke-width: 1;
 }

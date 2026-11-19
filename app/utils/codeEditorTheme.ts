@@ -49,7 +49,7 @@ const editorTheme = EditorView.theme({
   '.cm-activeLine': { backgroundColor: 'var(--cm-active-line)' },
   '.cm-cursor, .cm-dropCursor': { borderLeftColor: 'var(--color-accent-400)' },
   '.cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection': {
-    backgroundColor: 'rgb(99 102 241 / 0.28)'
+    backgroundColor: 'var(--cm-selection)'
   },
   '.cm-matchingBracket, &.cm-focused .cm-matchingBracket': {
     backgroundColor: 'var(--cm-bracket-bg)',
@@ -69,11 +69,11 @@ const editorTheme = EditorView.theme({
     borderBottom: '1px solid var(--color-line-chrome)'
   },
   '.cm-searchMatch': {
-    backgroundColor: 'rgb(250 204 21 / 0.22)',
-    outline: '1px solid rgb(250 204 21 / 0.45)'
+    backgroundColor: 'var(--cm-search)',
+    outline: '1px solid var(--cm-search-border)'
   },
   '.cm-searchMatch.cm-searchMatch-selected': {
-    backgroundColor: 'rgb(99 102 241 / 0.35)'
+    backgroundColor: 'var(--cm-search-selected)'
   }
 })
 
