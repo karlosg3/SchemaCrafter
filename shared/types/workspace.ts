@@ -26,8 +26,19 @@ export interface WH {
 /** `[from, to]` — the prototype paints block headers with a vertical gradient. */
 export type Gradient = [from: string, to: string]
 
-/** The 6 entity gradients from DB Canvas Designer.dc.html. */
+/** The 8 curated architectural drafting inks harmonizing with Blueprint Dark and Paper Light. */
 export const GRADIENTS: Gradient[] = [
+  ['#265385', '#193A62'], // Prussian Blue
+  ['#EA6A38', '#C8431F'], // Vermilion Terracotta
+  ['#2A7B5B', '#1C5941'], // Nordic Pine
+  ['#D99426', '#B47415'], // Drafting Ochre
+  ['#A63A50', '#7D273A'], // Deep Burgundy
+  ['#257A8C', '#1A5A69'], // Steel Teal
+  ['#5A6B7C', '#3F4E5E'], // Warm Slate
+  ['#8C6244', '#694730'] // Umber Bronze
+]
+
+const LEGACY_GRADIENTS: Gradient[] = [
   ['#6366f1', '#8b5cf6'],
   ['#22c55e', '#16a34a'],
   ['#f59e0b', '#ea580c'],
@@ -36,11 +47,11 @@ export const GRADIENTS: Gradient[] = [
   ['#64748b', '#475569']
 ]
 
-/** New entities get slate, matching the prototype. */
-export const DEFAULT_GRADIENT: Gradient = ['#64748b', '#475569']
+/** New entities default to Warm Slate drafting ink. */
+export const DEFAULT_GRADIENT: Gradient = ['#5A6B7C', '#3F4E5E']
 
-/** refactor-plan.md:80 locks enums to red — they are not user-recolourable. */
-export const ENUM_GRADIENT: Gradient = ['#ef4444', '#b91c1c']
+/** Enums use Deep Burgundy so they stand apart from user-coloured tables. */
+export const ENUM_GRADIENT: Gradient = ['#B93F4E', '#8F2937']
 
 export const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const
 
@@ -157,6 +168,8 @@ export function emptyWorkspace(): Workspace {
  */
 export function gradientFromColor(color: string | undefined): Gradient {
   if (!color) return DEFAULT_GRADIENT
-  const known = GRADIENTS.find(g => g[0].toLowerCase() === color.toLowerCase())
+  const lower = color.toLowerCase()
+  const known = GRADIENTS.find(g => g[0].toLowerCase() === lower)
+    ?? LEGACY_GRADIENTS.find(g => g[0].toLowerCase() === lower)
   return known ? [...known] as Gradient : [color, color]
 }
