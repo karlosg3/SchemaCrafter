@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="emblemTileGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FCF9F2" />
+      <stop offset="100%" stop-color="#EFE8DA" />
+    </linearGradient>
+
+    <linearGradient id="emblemHingeGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F57B47" />
+      <stop offset="100%" stop-color="#DA5524" />
+    </linearGradient>
+
+    <mask id="emblemUlMask">
+      <rect x="0" y="0" width="1024" height="1024" fill="#ffffff" />
+      <path d="M 417.07,489.27 A 14.00,14.00 0 0 1 424.99,495.70 L 528.30,599.01 A 14.00,14.00 0 0 1 534.73,606.93 A 84.00,84.00 0 1 0 606.93,534.73 A 14.00,14.00 0 0 1 599.01,528.30 L 495.70,424.99 A 14.00,14.00 0 0 1 489.27,417.07 A 84.00,84.00 0 1 0 417.07,489.27 Z" fill="#000000" />
+      <rect x="492" y="406" width="100" height="180" fill="#000000" />
+    </mask>
+
+    <mask id="emblemLrMask">
+      <rect x="0" y="0" width="1024" height="1024" fill="#ffffff" />
+      <path d="M 417.07,489.27 A 14.00,14.00 0 0 1 424.99,495.70 L 528.30,599.01 A 14.00,14.00 0 0 1 534.73,606.93 A 84.00,84.00 0 1 0 606.93,534.73 A 14.00,14.00 0 0 1 599.01,528.30 L 495.70,424.99 A 14.00,14.00 0 0 1 489.27,417.07 A 84.00,84.00 0 1 0 417.07,489.27 Z" fill="#000000" />
+      <rect x="432" y="438" width="100" height="180" fill="#000000" />
+    </mask>
+  </defs>
+
+  <path d="M 258.00,204.00 L 530.00,204.00 A 26.00,26.00 0 0 1 556.00,230.00 L 556.00,546.00 A 10.00,10.00 0 0 1 546.00,556.00 L 230.00,556.00 A 26.00,26.00 0 0 1 204.00,530.00 L 204.00,258.00 A 54.00,54.00 0 0 1 258.00,204.00 Z" fill="url(#emblemTileGrad)" stroke="#FFFFFF" stroke-width="2.5" mask="url(#emblemUlMask)" />
+  <path d="M 478.00,468.00 L 794.00,468.00 A 26.00,26.00 0 0 1 820.00,494.00 L 820.00,766.00 A 54.00,54.00 0 0 1 766.00,820.00 L 494.00,820.00 A 26.00,26.00 0 0 1 468.00,794.00 L 468.00,478.00 A 10.00,10.00 0 0 1 478.00,468.00 Z" fill="url(#emblemTileGrad)" stroke="#FFFFFF" stroke-width="2.5" mask="url(#emblemLrMask)" />
+  <path d="M 416.82,462.98 A 22.00,22.00 0 0 1 435.31,469.25 L 554.75,588.69 A 22.00,22.00 0 0 1 561.02,607.18 A 58.00,58.00 0 1 0 607.18,561.02 A 22.00,22.00 0 0 1 588.69,554.75 L 469.25,435.31 A 22.00,22.00 0 0 1 462.98,416.82 A 58.00,58.00 0 1 0 416.82,462.98 Z" fill="url(#emblemHingeGrad)" stroke="#FF9C70" stroke-width="2.5" />
+</svg>
