@@ -349,4 +349,87 @@ describe('duplication & relation updates', () => {
     expect(store.undo()).toBe(true)
     expect(store.table('table-orders')!.columns.find(c => c.id === 'o-2')!.foreignKey!.onUpdate).toBeUndefined()
   })
+
+  it('creates, links, duplicates and deletes API modules and endpoints with undo/redo', () => {
+    const store = storeWithTemplates()
+    const db = store.databases[0]!
+    const mod = store.createModule(db.id, { name: 'Users', basePath: '/users', description: 'User management' })
+    expect(mod).toBeDefined()
+
+    const ep = store.createEndpoint(mod!.id, {
+      method: 'GET',
+      path: '/users',
+      description: 'List users',
+      tableIds: ['table-users']
+    })
+    expect(ep).toBeDefined()
+    // Linking table on endpoint auto-syncs into parent module
+    expect(store.moduleEntity(mod!.id)!.tableIds).toEqual(['table-users'])
+
+    const copy = store.duplicateEndpoint(ep!.id)
+    expect(copy).toBeDefined()
+    expect(store.endpointsOfModule(mod!.id)).toHaveLength(2)
+
+    // Deleting a table unlinks it without deleting endpoints
+    store.deleteTable('table-users')
+    expect(store.endpointEntity(ep!.id)).toBeDefined()
+    expect(store.endpointEntity(ep!.id)!.tableIds).toEqual([])
+    expect(store.moduleEntity(mod!.id)!.tableIds).toEqual([])
+
+    // Undo restores table and its endpoint link
+    expect(store.undo()).toBe(true)
+    expect(store.table('table-users')).toBeDefined()
+    expect(store.endpointEntity(ep!.id)!.tableIds).toEqual(['table-users'])
+
+    // Deleting a module deletes its endpoints but keeps DB tables
+    store.deleteModule(mod!.id)
+    expect(store.moduleEntity(mod!.id)).toBeUndefined()
+    expect(store.endpointEntity(ep!.id)).toBeUndefined()
+    expect(store.table('table-users')).toBeDefined()
+  })
+
+  it('supports bidirectional generation: table -> endpoints and endpoint -> table with parent FK', () => {
+    const store = storeWithTemplates()
+    const db = store.databases[0]!
+    const schema = store.schemasOfDatabase(db.id)[0]!
+
+    const generated = store.generateEndpointsForTable('table-users', {
+      newModule: { name: 'Users', basePath: '/users' },
+      endpoints: [
+        { method: 'GET', path: '/users', description: 'List users' },
+        { method: 'POST', path: '/users', description: 'Create user' }
+      ]
+    })
+    expect(generated).toBeDefined()
+    expect(generated!.endpoints).toHaveLength(2)
+    expect(store.endpointsOfTable('table-users')).toHaveLength(2)
+
+    const sessionEp = store.createEndpoint(generated!.module.id, {
+      method: 'GET',
+      path: '/users/:id/sessions',
+      description: 'List user sessions'
+    })!
+
+    const usersPk = store.table('table-users')!.columns.find(c => c.isPrimaryKey)!
+    const createdTable = store.createTableFromEndpoint({
+      schemaId: schema.id,
+      name: 'sessions',
+      parentFk: {
+        columnName: 'user_id',
+        targetTableId: 'table-users',
+        targetColumnId: usersPk.id
+      },
+      endpointId: sessionEp.id
+    })
+
+    expect(createdTable).toBeDefined()
+    expect(createdTable!.columns.some(c => c.name === 'user_id' && c.foreignKey?.targetTableId === 'table-users')).toBe(true)
+    expect(store.endpointEntity(sessionEp.id)!.tableIds).toContain(createdTable!.id)
+    expect(store.moduleEntity(generated!.module.id)!.tableIds).toContain(createdTable!.id)
+
+    // Single undo removes both table creation and its link
+    expect(store.undo()).toBe(true)
+    expect(store.table(createdTable!.id)).toBeUndefined()
+    expect(store.endpointEntity(sessionEp.id)!.tableIds).not.toContain(createdTable!.id)
+  })
 })

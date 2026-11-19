@@ -8,8 +8,11 @@ import type {
 } from '#shared/types/schema'
 import type {
   DatabaseEntity,
+  EndpointEntity,
   EnumEntity,
   Gradient,
+  HttpMethod,
+  ModuleEntity,
   SchemaEntity,
   TableEntity,
   WH,
@@ -17,6 +20,11 @@ import type {
   XY
 } from '#shared/types/workspace'
 import { DEFAULT_GRADIENT, emptyWorkspace } from '#shared/types/workspace'
+import {
+  computeModulesLayout,
+  normalizeBasePath,
+  normalizeEndpointPath
+} from '#shared/utils/apiDesign'
 import { createId, uniqueName } from '#shared/utils/ids'
 import { computeDagSchemaLayout } from '#shared/utils/layout'
 import { applyParsedProject, toDatabaseProject } from '#shared/utils/projection'
@@ -535,6 +543,18 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         if (col.foreignKey?.targetTableId === id) delete col.foreignKey
       }
     }
+
+    // Unlink the deleted table from modules and endpoints without deleting endpoints.
+    for (const mod of Object.values(workspace.value.modules ?? {})) {
+      if (mod.tableIds.includes(id)) {
+        mod.tableIds = mod.tableIds.filter(tid => tid !== id)
+      }
+    }
+    for (const ep of Object.values(workspace.value.endpoints ?? {})) {
+      if (ep.tableIds.includes(id)) {
+        ep.tableIds = ep.tableIds.filter(tid => tid !== id)
+      }
+    }
     scheduleSave()
   }
 
@@ -785,6 +805,409 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     scheduleSave()
   }
 
+  // ------------------------------------------------------- modules & endpoints
+
+  function ensureApiMaps(): { modules: Record<string, ModuleEntity>, endpoints: Record<string, EndpointEntity> } {
+    if (!workspace.value.modules) workspace.value.modules = {}
+    if (!workspace.value.endpoints) workspace.value.endpoints = {}
+    return {
+      modules: workspace.value.modules,
+      endpoints: workspace.value.endpoints
+    }
+  }
+
+  function moduleEntity(id: string): ModuleEntity | undefined {
+    return workspace.value.modules?.[id]
+  }
+
+  function endpointEntity(id: string): EndpointEntity | undefined {
+    return workspace.value.endpoints?.[id]
+  }
+
+  function modulesOfDatabase(dbId: string): ModuleEntity[] {
+    const db = database(dbId)
+    if (!db) return []
+    const map = workspace.value.modules ?? {}
+    return (db.moduleIds ?? []).map(id => map[id]).filter((m): m is ModuleEntity => !!m)
+  }
+
+  function endpointsOfModule(moduleId: string): EndpointEntity[] {
+    const mod = moduleEntity(moduleId)
+    if (!mod) return []
+    const map = workspace.value.endpoints ?? {}
+    return mod.endpointIds.map(id => map[id]).filter((e): e is EndpointEntity => !!e)
+  }
+
+  function endpointsOfDatabase(dbId: string): EndpointEntity[] {
+    return modulesOfDatabase(dbId).flatMap(m => endpointsOfModule(m.id))
+  }
+
+  function endpointsOfTable(tableId: string): EndpointEntity[] {
+    return Object.values(workspace.value.endpoints ?? {}).filter(ep => ep.tableIds.includes(tableId))
+  }
+
+  function modulesOfTable(tableId: string): ModuleEntity[] {
+    return Object.values(workspace.value.modules ?? {}).filter(m => m.tableIds.includes(tableId))
+  }
+
+  function validDbTableIds(dbId: string, candidateIds: readonly string[] = []): string[] {
+    const allowed = new Set(tablesOfDatabase(dbId).map(t => t.id))
+    return [...new Set(candidateIds.filter(id => allowed.has(id)))]
+  }
+
+  function nextFreeModulePosition(dbId: string): XY {
+    const existing = modulesOfDatabase(dbId)
+    const maxY = existing.reduce((acc, m) => Math.max(acc, (m.position?.y ?? 80) + 220), 80)
+    return { x: 80, y: existing.length === 0 ? 80 : Math.ceil(maxY / 16) * 16 }
+  }
+
+  function createModule(
+    dbId: string,
+    input: {
+      name: string
+      basePath?: string
+      description?: string
+      gradient?: Gradient
+      tableIds?: string[]
+    }
+  ): ModuleEntity | undefined {
+    const db = database(dbId)
+    if (!db) return undefined
+    recordHistory()
+
+    const { modules } = ensureApiMaps()
+    const id = createId('mod')
+    const entity: ModuleEntity = {
+      id,
+      dbId,
+      name: input.name.trim() || 'Module',
+      basePath: normalizeBasePath(input.basePath ?? ''),
+      ...(input.description?.trim() ? { description: input.description.trim() } : {}),
+      gradient: input.gradient ? [...input.gradient] as Gradient : [...DEFAULT_GRADIENT] as Gradient,
+      tableIds: validDbTableIds(dbId, input.tableIds),
+      endpointIds: [],
+      position: nextFreeModulePosition(dbId)
+    }
+
+    modules[id] = entity
+    db.moduleIds = [...(db.moduleIds ?? []), id]
+    scheduleSave()
+    return entity
+  }
+
+  function updateModule(
+    id: string,
+    patch: Partial<Pick<ModuleEntity, 'name' | 'basePath' | 'description' | 'gradient' | 'tableIds'>>
+  ): void {
+    const mod = moduleEntity(id)
+    if (!mod) return
+    recordHistory()
+
+    if (patch.name !== undefined) mod.name = patch.name.trim() || mod.name
+    if (patch.basePath !== undefined) mod.basePath = normalizeBasePath(patch.basePath)
+    if (patch.description !== undefined) {
+      const trimmed = patch.description.trim()
+      if (trimmed) mod.description = trimmed
+      else delete mod.description
+    }
+    if (patch.gradient !== undefined) mod.gradient = [...patch.gradient] as Gradient
+    if (patch.tableIds !== undefined) {
+      const nextTables = validDbTableIds(mod.dbId, patch.tableIds)
+      const nextSet = new Set(nextTables)
+      mod.tableIds = nextTables
+      // Keep endpoint.tableIds consistent with module.tableIds when unlinking a table
+      for (const ep of endpointsOfModule(id)) {
+        if (ep.tableIds.some(tid => !nextSet.has(tid))) {
+          ep.tableIds = ep.tableIds.filter(tid => nextSet.has(tid))
+        }
+      }
+    }
+    scheduleSave()
+  }
+
+  function deleteModule(id: string): void {
+    const mod = moduleEntity(id)
+    if (!mod) return
+    recordHistory()
+
+    const { modules, endpoints } = ensureApiMaps()
+    for (const epId of mod.endpointIds) dropKey(endpoints, epId)
+    dropKey(modules, id)
+
+    const db = database(mod.dbId)
+    if (db?.moduleIds) db.moduleIds = db.moduleIds.filter(mid => mid !== id)
+    scheduleSave()
+  }
+
+  function moveModule(id: string, position: XY): void {
+    const mod = moduleEntity(id)
+    if (!mod) return
+    recordHistory()
+    mod.position = { ...position }
+    scheduleSave()
+  }
+
+  function linkModuleTable(moduleId: string, tableId: string): boolean {
+    const mod = moduleEntity(moduleId)
+    const tbl = table(tableId)
+    const tblSchema = tbl ? schema(tbl.schemaId) : undefined
+    if (!mod || !tbl || !tblSchema || tblSchema.dbId !== mod.dbId) return false
+    if (mod.tableIds.includes(tableId)) return false
+    recordHistory()
+    mod.tableIds = [...mod.tableIds, tableId]
+    scheduleSave()
+    return true
+  }
+
+  function unlinkModuleTable(moduleId: string, tableId: string): void {
+    const mod = moduleEntity(moduleId)
+    if (!mod || !mod.tableIds.includes(tableId)) return
+    recordHistory()
+    mod.tableIds = mod.tableIds.filter(id => id !== tableId)
+    for (const ep of endpointsOfModule(moduleId)) {
+      if (ep.tableIds.includes(tableId)) {
+        ep.tableIds = ep.tableIds.filter(id => id !== tableId)
+      }
+    }
+    scheduleSave()
+  }
+
+  function autoLayoutModules(dbId: string): void {
+    const mods = modulesOfDatabase(dbId)
+    if (mods.length === 0) return
+    recordHistory()
+    const { modulePositions } = computeModulesLayout(mods, tablesOfDatabase(dbId))
+    for (const mod of mods) {
+      const pos = modulePositions[mod.id]
+      if (pos) mod.position = pos
+    }
+    scheduleSave()
+  }
+
+  function createEndpoint(
+    moduleId: string,
+    input: {
+      method: HttpMethod
+      path: string
+      description?: string
+      tableIds?: string[]
+    }
+  ): EndpointEntity | undefined {
+    const mod = moduleEntity(moduleId)
+    if (!mod) return undefined
+    recordHistory()
+
+    const { endpoints } = ensureApiMaps()
+    const id = createId('ep')
+    const validTables = validDbTableIds(mod.dbId, input.tableIds)
+    const entity: EndpointEntity = {
+      id,
+      moduleId,
+      method: input.method,
+      path: normalizeEndpointPath(input.path),
+      description: (input.description ?? '').trim(),
+      tableIds: validTables
+    }
+    endpoints[id] = entity
+    mod.endpointIds = [...mod.endpointIds, id]
+
+    // Auto-sync endpoint tables into parent module.tableIds
+    const modTables = new Set(mod.tableIds)
+    for (const tid of validTables) modTables.add(tid)
+    mod.tableIds = [...modTables]
+
+    scheduleSave()
+    return entity
+  }
+
+  function updateEndpoint(
+    id: string,
+    patch: Partial<Pick<EndpointEntity, 'moduleId' | 'method' | 'path' | 'description' | 'tableIds'>>
+  ): void {
+    const ep = endpointEntity(id)
+    if (!ep) return
+    const prevMod = moduleEntity(ep.moduleId)
+    const targetMod = patch.moduleId ? moduleEntity(patch.moduleId) : prevMod
+    if (!prevMod || !targetMod) return
+    recordHistory()
+
+    if (patch.moduleId && patch.moduleId !== ep.moduleId) {
+      prevMod.endpointIds = prevMod.endpointIds.filter(eid => eid !== id)
+      if (!targetMod.endpointIds.includes(id)) targetMod.endpointIds = [...targetMod.endpointIds, id]
+      ep.moduleId = targetMod.id
+    }
+    if (patch.method !== undefined) ep.method = patch.method
+    if (patch.path !== undefined) ep.path = normalizeEndpointPath(patch.path)
+    if (patch.description !== undefined) ep.description = patch.description.trim()
+    if (patch.tableIds !== undefined) {
+      ep.tableIds = validDbTableIds(targetMod.dbId, patch.tableIds)
+    } else if (targetMod.dbId !== prevMod.dbId) {
+      ep.tableIds = validDbTableIds(targetMod.dbId, ep.tableIds)
+    }
+
+    const modTables = new Set(targetMod.tableIds)
+    for (const tid of ep.tableIds) modTables.add(tid)
+    targetMod.tableIds = [...modTables]
+
+    scheduleSave()
+  }
+
+  function duplicateEndpoint(id: string): EndpointEntity | undefined {
+    const src = endpointEntity(id)
+    const mod = src ? moduleEntity(src.moduleId) : undefined
+    if (!src || !mod) return undefined
+    recordHistory()
+
+    const { endpoints } = ensureApiMaps()
+    const newId = createId('ep')
+    const copy: EndpointEntity = {
+      id: newId,
+      moduleId: src.moduleId,
+      method: src.method,
+      path: src.path,
+      description: src.description ? `${src.description} (copy)` : '',
+      tableIds: [...src.tableIds]
+    }
+    endpoints[newId] = copy
+    const idx = mod.endpointIds.indexOf(id)
+    if (idx >= 0) {
+      mod.endpointIds.splice(idx + 1, 0, newId)
+    } else {
+      mod.endpointIds.push(newId)
+    }
+    scheduleSave()
+    return copy
+  }
+
+  function deleteEndpoint(id: string): void {
+    const ep = endpointEntity(id)
+    if (!ep) return
+    recordHistory()
+
+    const { endpoints } = ensureApiMaps()
+    const mod = moduleEntity(ep.moduleId)
+    if (mod) mod.endpointIds = mod.endpointIds.filter(eid => eid !== id)
+    dropKey(endpoints, id)
+    scheduleSave()
+  }
+
+  /**
+   * Atomically creates one or more endpoints from a table, creating or attaching to a module.
+   */
+  function generateEndpointsForTable(
+    tableId: string,
+    options: {
+      moduleId?: string
+      newModule?: { name: string, basePath?: string, description?: string, gradient?: Gradient }
+      endpoints: ReadonlyArray<{ method: HttpMethod, path: string, description: string }>
+    }
+  ): { module: ModuleEntity, endpoints: EndpointEntity[] } | undefined {
+    const tbl = table(tableId)
+    const tblSchema = tbl ? schema(tbl.schemaId) : undefined
+    if (!tbl || !tblSchema || options.endpoints.length === 0) return undefined
+    recordHistory()
+
+    const dbId = tblSchema.dbId
+    let mod = options.moduleId ? moduleEntity(options.moduleId) : undefined
+    if (mod && mod.dbId !== dbId) mod = undefined
+
+    if (!mod) {
+      const created = withHistorySuspended(() =>
+        createModule(dbId, {
+          name: options.newModule?.name || tbl.name,
+          basePath: options.newModule?.basePath,
+          description: options.newModule?.description,
+          gradient: options.newModule?.gradient ?? tbl.gradient,
+          tableIds: [tableId]
+        })
+      )
+      if (!created) return undefined
+      mod = created
+    } else if (!mod.tableIds.includes(tableId)) {
+      mod.tableIds = [...mod.tableIds, tableId]
+    }
+
+    const createdEndpoints: EndpointEntity[] = []
+    for (const item of options.endpoints) {
+      const ep = withHistorySuspended(() =>
+        createEndpoint(mod!.id, {
+          method: item.method,
+          path: item.path,
+          description: item.description,
+          tableIds: [tableId]
+        })
+      )
+      if (ep) createdEndpoints.push(ep)
+    }
+
+    scheduleSave()
+    return { module: mod, endpoints: createdEndpoints }
+  }
+
+  /**
+   * Atomically creates a database table inferred from an endpoint/module route and links
+   * it back to the originating endpoint and module.
+   */
+  function createTableFromEndpoint(options: {
+    schemaId: string
+    name: string
+    gradient?: Gradient
+    comment?: string
+    parentFk?: {
+      columnName: string
+      targetTableId: string
+      targetColumnId: string
+    } | null
+    endpointId?: string
+    moduleId?: string
+  }): TableEntity | undefined {
+    const s = schema(options.schemaId)
+    if (!s) return undefined
+    recordHistory()
+
+    const created = withHistorySuspended(() => createTable(options.schemaId, options.name))
+    if (!created) return undefined
+
+    if (options.gradient) created.gradient = [...options.gradient] as Gradient
+    if (options.comment?.trim()) created.comment = options.comment.trim()
+
+    if (options.parentFk) {
+      const target = table(options.parentFk.targetTableId)
+      const targetCol = target?.columns.find(c => c.id === options.parentFk!.targetColumnId)
+      if (target && targetCol) {
+        created.columns.push({
+          id: createId('col'),
+          name: uniqueName(options.parentFk.columnName, created.columns.map(c => c.name)),
+          type: targetCol.type === 'ENUM' ? 'VARCHAR' : targetCol.type,
+          isPrimaryKey: false,
+          isNullable: false,
+          isUnique: false,
+          isIndexed: true,
+          foreignKey: {
+            targetTableId: target.id,
+            targetColumnId: targetCol.id,
+            onDelete: 'CASCADE'
+          }
+        })
+      }
+    }
+
+    const ep = options.endpointId ? endpointEntity(options.endpointId) : undefined
+    const mod = ep
+      ? moduleEntity(ep.moduleId)
+      : (options.moduleId ? moduleEntity(options.moduleId) : undefined)
+
+    if (ep && mod && mod.dbId === s.dbId && !ep.tableIds.includes(created.id)) {
+      ep.tableIds = [...ep.tableIds, created.id]
+    }
+    if (mod && mod.dbId === s.dbId && !mod.tableIds.includes(created.id)) {
+      mod.tableIds = [...mod.tableIds, created.id]
+    }
+
+    scheduleSave()
+    return created
+  }
+
   // -------------------------------------------------------------- code sync
 
   /**
@@ -871,6 +1294,27 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     moveNodes,
     resizeNode,
     autoLayout,
+
+    moduleEntity,
+    endpointEntity,
+    modulesOfDatabase,
+    endpointsOfModule,
+    endpointsOfDatabase,
+    endpointsOfTable,
+    modulesOfTable,
+    createModule,
+    updateModule,
+    deleteModule,
+    moveModule,
+    linkModuleTable,
+    unlinkModuleTable,
+    autoLayoutModules,
+    createEndpoint,
+    updateEndpoint,
+    duplicateEndpoint,
+    deleteEndpoint,
+    generateEndpointsForTable,
+    createTableFromEndpoint,
 
     applyCode,
     replaceWorkspace

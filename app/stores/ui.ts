@@ -3,15 +3,19 @@ import type { DatabaseEngine, ORMTarget } from '#shared/types/schema'
 import { loadUiState, saveUiState } from '~/utils/persistence'
 import { useWorkspaceStore } from './workspace'
 
+/** Top-level workspace perspective switched from the navbar. */
+export type WorkspaceMode = 'database' | 'modules' | 'endpoints'
+
 /** The three canvas levels from refactor-plan.md. */
 export type ViewLevel = 'databases' | 'schemas' | 'tables'
 
 /** Which list the left sidebar's icon rail is showing. */
-export type RailTab = 'databases' | 'schemas' | 'tables' | 'enums'
+export type RailTab = 'databases' | 'schemas' | 'tables' | 'enums' | 'modules'
 
 interface PersistedUiState {
   activeDbId: string | null
   activeSchemaId: string | null
+  workspaceMode: WorkspaceMode
   viewLevel: ViewLevel
   railTab: RailTab
   leftOpen: boolean
@@ -20,6 +24,7 @@ interface PersistedUiState {
   showRelations: boolean
   showEnums: boolean
   showTypes: boolean
+  showUnlinkedTables: boolean
   editable: boolean
   snapToGrid: boolean
   showMinimap: boolean
@@ -28,6 +33,7 @@ interface PersistedUiState {
 const DEFAULTS: PersistedUiState = {
   activeDbId: null,
   activeSchemaId: null,
+  workspaceMode: 'database',
   viewLevel: 'tables',
   railTab: 'tables',
   leftOpen: true,
@@ -37,6 +43,7 @@ const DEFAULTS: PersistedUiState = {
   showRelations: true,
   showEnums: true,
   showTypes: true,
+  showUnlinkedTables: true,
   editable: true,
   snapToGrid: true,
   showMinimap: true
@@ -75,6 +82,10 @@ export const useUiStore = defineStore('ui', () => {
   const commandPaletteOpen = ref(false)
   const migrationDiffOpen = ref(false)
   const welcomeOpen = ref(false)
+  /** Transient cross-view filters when navigating between Database, Modules and Endpoints. */
+  const endpointFilterTableId = ref<string | null>(null)
+  const endpointFilterModuleId = ref<string | null>(null)
+  const selectedModuleId = ref<string | null>(null)
 
   const workspaceStore = useWorkspaceStore()
 
@@ -129,6 +140,9 @@ export const useUiStore = defineStore('ui', () => {
   function selectDatabase(id: string): void {
     state.activeDbId = id
     state.activeSchemaId = null
+    endpointFilterTableId.value = null
+    endpointFilterModuleId.value = null
+    selectedModuleId.value = null
   }
 
   function selectSchema(id: string): void {
@@ -138,7 +152,15 @@ export const useUiStore = defineStore('ui', () => {
     state.activeSchemaId = id
   }
 
+  function setWorkspaceMode(mode: WorkspaceMode): void {
+    state.workspaceMode = mode
+    if (mode === 'modules' && state.railTab !== 'modules') {
+      state.railTab = 'modules'
+    }
+  }
+
   function setViewLevel(level: ViewLevel): void {
+    state.workspaceMode = 'database'
     state.viewLevel = level
   }
 
@@ -146,7 +168,52 @@ export const useUiStore = defineStore('ui', () => {
   function drillInto(level: ViewLevel, id?: string): void {
     if (level === 'schemas' && id) selectDatabase(id)
     if (level === 'tables' && id) selectSchema(id)
+    state.workspaceMode = 'database'
     state.viewLevel = level
+  }
+
+  function openTableInDatabase(tableId: string): void {
+    const tbl = workspaceStore.table(tableId)
+    if (!tbl) return
+    selectSchema(tbl.schemaId)
+    state.workspaceMode = 'database'
+    state.viewLevel = 'tables'
+    state.railTab = 'tables'
+    requestFocus(tableId)
+  }
+
+  function openEndpointsForTable(tableId: string): void {
+    const tbl = workspaceStore.table(tableId)
+    if (!tbl) return
+    const sch = workspaceStore.schema(tbl.schemaId)
+    if (sch) state.activeDbId = sch.dbId
+    endpointFilterModuleId.value = null
+    endpointFilterTableId.value = tableId
+    state.workspaceMode = 'endpoints'
+  }
+
+  function openEndpointsForModule(moduleId: string): void {
+    const mod = workspaceStore.moduleEntity(moduleId)
+    if (!mod) return
+    state.activeDbId = mod.dbId
+    endpointFilterTableId.value = null
+    endpointFilterModuleId.value = moduleId
+    state.workspaceMode = 'endpoints'
+  }
+
+  function openModuleInCanvas(moduleId: string): void {
+    const mod = workspaceStore.moduleEntity(moduleId)
+    if (!mod) return
+    state.activeDbId = mod.dbId
+    selectedModuleId.value = moduleId
+    state.workspaceMode = 'modules'
+    state.railTab = 'modules'
+    requestFocus(moduleId)
+  }
+
+  function clearEndpointFilters(): void {
+    endpointFilterTableId.value = null
+    endpointFilterModuleId.value = null
   }
 
   function setRailTab(tab: RailTab): void {
@@ -170,7 +237,7 @@ export const useUiStore = defineStore('ui', () => {
   }
 
   function toggleDisplay(
-    key: 'showRelations' | 'showEnums' | 'showTypes' | 'editable' | 'snapToGrid' | 'showMinimap'
+    key: 'showRelations' | 'showEnums' | 'showTypes' | 'showUnlinkedTables' | 'editable' | 'snapToGrid' | 'showMinimap'
   ): void {
     state[key] = !state[key]
   }
@@ -195,14 +262,16 @@ export const useUiStore = defineStore('ui', () => {
   const VALIDATORS: { [K in keyof PersistedUiState]: (v: unknown) => v is PersistedUiState[K] } = {
     activeDbId: isNullableString,
     activeSchemaId: isNullableString,
+    workspaceMode: oneOf<WorkspaceMode>(['database', 'modules', 'endpoints']),
     viewLevel: oneOf<ViewLevel>(['databases', 'schemas', 'tables']),
-    railTab: oneOf<RailTab>(['databases', 'schemas', 'tables', 'enums']),
+    railTab: oneOf<RailTab>(['databases', 'schemas', 'tables', 'enums', 'modules']),
     leftOpen: isBoolean,
     rightOpen: isBoolean,
     codeTarget: oneOf<ORMTarget>(['sql', 'prisma', 'drizzle', 'typeorm', 'mikroorm']),
     showRelations: isBoolean,
     showEnums: isBoolean,
     showTypes: isBoolean,
+    showUnlinkedTables: isBoolean,
     editable: isBoolean,
     snapToGrid: isBoolean,
     showMinimap: isBoolean
@@ -258,6 +327,9 @@ export const useUiStore = defineStore('ui', () => {
     commandPaletteOpen,
     migrationDiffOpen,
     welcomeOpen,
+    endpointFilterTableId,
+    endpointFilterModuleId,
+    selectedModuleId,
 
     activeDbId,
     activeDatabase,
@@ -268,8 +340,14 @@ export const useUiStore = defineStore('ui', () => {
 
     selectDatabase,
     selectSchema,
+    setWorkspaceMode,
     setViewLevel,
     drillInto,
+    openTableInDatabase,
+    openEndpointsForTable,
+    openEndpointsForModule,
+    openModuleInCanvas,
+    clearEndpointFilters,
     setRailTab,
     toggleLeft,
     toggleRight,

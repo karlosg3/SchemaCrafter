@@ -123,4 +123,26 @@ describe('active selection', () => {
     ui.selectDatabase(first!.id)
     expect(ui.activeSchemaId).toBe(workspace.schemasOfDatabase(first!.id)[0]!.id)
   })
+
+  it('navigates across database, modules and endpoints modes preserving target filters', () => {
+    const workspace = seeded()
+    const ui = useUiStore()
+    const db = workspace.databases[0]!
+    const mod = workspace.createModule(db.id, { name: 'Users', basePath: '/users', tableIds: ['table-users'] })!
+
+    ui.openEndpointsForTable('table-users')
+    expect(ui.state.workspaceMode).toBe('endpoints')
+    expect(ui.endpointFilterTableId).toBe('table-users')
+
+    ui.openModuleInCanvas(mod.id)
+    expect(ui.state.workspaceMode).toBe('modules')
+    expect(ui.state.railTab).toBe('modules')
+    expect(ui.selectedModuleId).toBe(mod.id)
+    expect(ui.focusTargetId).toBe(mod.id)
+
+    ui.openTableInDatabase('table-users')
+    expect(ui.state.workspaceMode).toBe('database')
+    expect(ui.state.viewLevel).toBe('tables')
+    expect(ui.focusTargetId).toBe('table-users')
+  })
 })
