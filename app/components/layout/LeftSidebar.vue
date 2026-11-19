@@ -16,7 +16,7 @@ const RAIL: { tab: RailTab, icon: string, label: string }[] = [
   { tab: 'schemas', icon: 'i-ph-folders', label: 'Schemas' },
   { tab: 'tables', icon: 'i-ph-table', label: 'Tables' },
   { tab: 'enums', icon: 'i-ph-list-bullets', label: 'Enums' },
-  { tab: 'modules', icon: 'i-ph-cubes', label: 'Modules' }
+  { tab: 'modules', icon: 'i-ph-cube', label: 'Modules' }
 ]
 
 const PANELS = {

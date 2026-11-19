@@ -5,6 +5,54 @@ export default defineAppConfig({
       neutral: 'slate'
     },
 
+    // Map all built-in Nuxt UI icons to locally installed @iconify-json/ph
+    // so zero external lucide fetches happen in offline Tauri desktop builds.
+    icons: {
+      arrowDown: 'i-ph-arrow-down',
+      arrowLeft: 'i-ph-arrow-left',
+      arrowRight: 'i-ph-arrow-right',
+      arrowUp: 'i-ph-arrow-up',
+      caution: 'i-ph-warning-circle',
+      check: 'i-ph-check',
+      chevronDoubleLeft: 'i-ph-caret-double-left',
+      chevronDoubleRight: 'i-ph-caret-double-right',
+      chevronDown: 'i-ph-caret-down',
+      chevronLeft: 'i-ph-caret-left',
+      chevronRight: 'i-ph-caret-right',
+      chevronUp: 'i-ph-caret-up',
+      close: 'i-ph-x',
+      copy: 'i-ph-copy',
+      copyCheck: 'i-ph-check',
+      dark: 'i-ph-moon',
+      drag: 'i-ph-dots-six-vertical',
+      ellipsis: 'i-ph-dots-three',
+      error: 'i-ph-x-circle',
+      external: 'i-ph-arrow-up-right',
+      eye: 'i-ph-eye',
+      eyeOff: 'i-ph-eye-slash',
+      file: 'i-ph-file',
+      folder: 'i-ph-folder',
+      folderOpen: 'i-ph-folder-open',
+      hash: 'i-ph-hash',
+      info: 'i-ph-info',
+      light: 'i-ph-sun',
+      loading: 'i-ph-spinner-gap',
+      menu: 'i-ph-list',
+      minus: 'i-ph-minus',
+      panelClose: 'i-ph-sidebar-simple-fill',
+      panelOpen: 'i-ph-sidebar-simple',
+      plus: 'i-ph-plus',
+      reload: 'i-ph-arrow-counter-clockwise',
+      search: 'i-ph-magnifying-glass',
+      stop: 'i-ph-square',
+      star: 'i-ph-star',
+      success: 'i-ph-check-circle',
+      system: 'i-ph-monitor',
+      tip: 'i-ph-lightbulb',
+      upload: 'i-ph-upload-simple',
+      warning: 'i-ph-warning'
+    },
+
     /**
      * Nuxt UI's dashboard primitives assume they *are* the page: the group is
      * `fixed inset-0` and both sidebar and panel roots are `min-h-svh`. Our

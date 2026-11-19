@@ -22,6 +22,19 @@ export default defineNuxtConfig({
     fonts: false
   },
 
+  // Bundle all used Phosphor icons into the client JS so the static SPA works
+  // 100% offline in Tauri (under strict CSP) and without external Iconify calls.
+  icon: {
+    provider: 'none',
+    serverBundle: false,
+    clientBundle: {
+      scan: {
+        globInclude: ['app/**/*.{vue,ts}', 'shared/**/*.ts']
+      },
+      sizeLimitKb: 512
+    }
+  },
+
   css: ['~/assets/css/main.css'],
 
   // Directories under components/ are organisational only. Without this, a file

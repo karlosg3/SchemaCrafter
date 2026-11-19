@@ -311,7 +311,7 @@ function clearAllFilters() {
           <div class="flex items-center gap-2 flex-wrap">
             <UButton
               label="Modules map"
-              icon="i-ph-cubes"
+              icon="i-ph-cube"
               color="neutral"
               variant="outline"
               size="sm"
@@ -411,7 +411,7 @@ function clearAllFilters() {
             />
             <UButton
               label="Open Modules canvas"
-              icon="i-ph-cubes"
+              icon="i-ph-cube"
               color="neutral"
               variant="soft"
               size="sm"
@@ -473,7 +473,7 @@ function clearAllFilters() {
           <div class="px-4 py-3 border-b border-line-header bg-surface-raised/80 [.light_&]:bg-surface-raised space-y-2.5">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex items-center gap-2 min-w-0">
-                <UIcon name="i-ph-cubes" class="size-4 text-accent-400 [.light_&]:text-accent-600 shrink-0" />
+                <UIcon name="i-ph-cube" class="size-4 text-accent-400 [.light_&]:text-accent-600 shrink-0" />
                 <h2 class="text-[14.5px] font-semibold text-ink-bright truncate">
                   {{ group.module.name }}
                 </h2>

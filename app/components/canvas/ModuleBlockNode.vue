@@ -46,7 +46,7 @@ const hiddenCount = computed(() => Math.max(0, props.data.endpoints.length - 6))
 
     <!-- Header -->
     <div class="group/header flex items-center gap-2 h-10 px-2.5 border-b border-line-header bg-surface-raised/85 [.light_&]:bg-surface-raised">
-      <UIcon name="i-ph-cubes" class="size-3.5 shrink-0 text-accent-400 [.light_&]:text-accent-600" />
+      <UIcon name="i-ph-cube" class="size-3.5 shrink-0 text-accent-400 [.light_&]:text-accent-600" />
       <span class="flex-1 min-w-0 font-semibold text-[12.5px] text-ink-bright truncate">
         {{ data.name }}
       </span>

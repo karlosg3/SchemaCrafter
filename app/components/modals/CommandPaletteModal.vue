@@ -56,7 +56,7 @@ const allCommands = computed<CommandEntry[]>(() => {
     const dbId = ui.activeDbId
     cmds.push(
       { id: 'act-new-schema', category: 'Actions', label: 'New schema', hint: 'Active database', icon: 'i-ph-folders', run: () => dialogs.createSchema(dbId) },
-      { id: 'act-new-module', category: 'API Design', label: 'New API module', hint: 'Group endpoints', icon: 'i-ph-cubes', run: () => { void apiDialogs.createModule(dbId) } },
+      { id: 'act-new-module', category: 'API Design', label: 'New API module', hint: 'Group endpoints', icon: 'i-ph-cube', run: () => { void apiDialogs.createModule(dbId) } },
       { id: 'act-new-endpoint', category: 'API Design', label: 'New endpoint', hint: 'GET / POST / PUT / PATCH / DELETE', icon: 'i-ph-plugs-connected', run: () => { void apiDialogs.createEndpoint(dbId) } },
       { id: 'act-import-sql', category: 'Actions', label: 'Import SQL DDL…', icon: 'i-ph-upload-simple', run: () => dialogs.importSql(dbId) }
     )
@@ -64,7 +64,7 @@ const allCommands = computed<CommandEntry[]>(() => {
 
   cmds.push(
     { id: 'mode-database', category: 'Views', label: 'Switch to Database view', hint: 'Alt+1', icon: 'i-ph-database', run: () => ui.setWorkspaceMode('database') },
-    { id: 'mode-modules', category: 'Views', label: 'Switch to Modules canvas', hint: 'Alt+2', icon: 'i-ph-cubes', run: () => ui.setWorkspaceMode('modules') },
+    { id: 'mode-modules', category: 'Views', label: 'Switch to Modules canvas', hint: 'Alt+2', icon: 'i-ph-cube', run: () => ui.setWorkspaceMode('modules') },
     { id: 'mode-endpoints', category: 'Views', label: 'Switch to Endpoints catalog', hint: 'Alt+3', icon: 'i-ph-plugs-connected', run: () => ui.setWorkspaceMode('endpoints') }
   )
 
@@ -75,7 +75,7 @@ const allCommands = computed<CommandEntry[]>(() => {
         category: 'Modules',
         label: mod.name,
         hint: mod.basePath || `${mod.endpointIds.length} ep`,
-        icon: 'i-ph-cubes',
+        icon: 'i-ph-cube',
         keywords: `module api ${mod.basePath} ${mod.description ?? ''}`,
         run: () => ui.openModuleInCanvas(mod.id)
       })

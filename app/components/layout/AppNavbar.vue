@@ -13,7 +13,7 @@ const colorMode = useColorMode()
 
 const WORKSPACE_MODES: { id: WorkspaceMode, label: string, icon: string, shortcut: string }[] = [
   { id: 'database', label: 'Database', icon: 'i-ph-database', shortcut: 'Alt+1' },
-  { id: 'modules', label: 'Modules', icon: 'i-ph-cubes', shortcut: 'Alt+2' },
+  { id: 'modules', label: 'Modules', icon: 'i-ph-cube', shortcut: 'Alt+2' },
   { id: 'endpoints', label: 'Endpoints', icon: 'i-ph-plugs-connected', shortcut: 'Alt+3' }
 ]
 

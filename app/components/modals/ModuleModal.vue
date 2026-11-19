@@ -94,7 +94,7 @@ function submit() {
             class="size-8 shrink-0 rounded-md grid place-items-center shadow-sm"
             :style="{ background: `linear-gradient(135deg, ${local.gradient[0]}, ${local.gradient[1]})` }"
           >
-            <UIcon name="i-ph-cubes" class="size-4 text-white" />
+            <UIcon name="i-ph-cube" class="size-4 text-white" />
           </span>
           <div class="min-w-0 flex-1">
             <p class="text-[13px] font-semibold text-ink-bright truncate">

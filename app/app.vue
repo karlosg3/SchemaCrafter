@@ -324,7 +324,7 @@ const rightCollapsed = computed({
         class="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-surface-root/80 backdrop-blur-xs"
       >
         <div class="rounded-md border-2 border-dashed border-accent-500/75 [.light_&]:border-accent-600/75 bg-surface-block/95 px-8 py-6 text-center shadow-2xl">
-          <UIcon name="i-lucide-file-up" class="mx-auto mb-2 size-8 text-accent-400 [.light_&]:text-accent-600" />
+          <UIcon name="i-ph-file-arrow-up" class="mx-auto mb-2 size-8 text-accent-400 [.light_&]:text-accent-600" />
           <p class="text-[14px] font-semibold text-ink-bright">
             Drop project file to open
           </p>

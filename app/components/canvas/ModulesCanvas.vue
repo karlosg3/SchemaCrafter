@@ -201,7 +201,7 @@ async function onAutoLayout() {
     <!-- Top-left helper strip -->
     <div class="absolute top-3.5 left-3.5 z-10 flex items-center gap-2">
       <div class="sc-panel flex items-center gap-2 px-2.5 py-1.5 text-[11.5px] text-ink-muted">
-        <UIcon name="i-ph-cubes" class="size-3.5 text-accent-400 [.light_&]:text-accent-600" />
+        <UIcon name="i-ph-cube" class="size-3.5 text-accent-400 [.light_&]:text-accent-600" />
         <span class="font-medium text-ink-bright">Modules ↔ Entities Map</span>
         <span class="text-line-panel">·</span>
         <span class="hidden sm:inline text-[11px] text-ink-dim">Drag handles to connect · Click line to unlink</span>
@@ -278,7 +278,7 @@ async function onAutoLayout() {
     <div v-if="isEmpty" class="absolute inset-0 grid place-items-center pointer-events-none px-4">
       <div class="pointer-events-auto sc-panel max-w-sm w-full p-6 text-center space-y-4">
         <span class="mx-auto size-11 rounded-md bg-accent-500/14 border border-accent-500/30 grid place-items-center text-accent-400 [.light_&]:text-accent-600">
-          <UIcon name="i-ph-cubes" class="size-5" />
+          <UIcon name="i-ph-cube" class="size-5" />
         </span>
         <div class="space-y-1">
           <h3 class="text-[14px] font-semibold text-ink-bright">
